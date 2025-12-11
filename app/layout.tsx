@@ -5,6 +5,13 @@ import { minikitConfig } from "../minikit.config";
 import { RootProvider } from "./rootProvider";
 import "./globals.css";
 
+
+export const metadata: Metadata = {
+  other: {
+    'base:app_id': '693a9b718a7c4e55fec73df7',
+  },
+};
+
 export async function generateMetadata(): Promise<Metadata> {
   return {
     title: minikitConfig.miniapp.name,
