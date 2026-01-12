@@ -1,11 +1,12 @@
-# 🎲 Tycoon Mini-App — Monopoly Tycoon on Chain
+# 🎲 Tycoon — Monopoly Tycoon on Chain
 
 ## Overview
 
 **Tycoon** is an exciting blockchain-\ tycoon game inspired by the classic **Monopoly** board game, built on the **Base and Celo Network**.  
-Players can **buy, sell, and trade virtual properties as NFTs**, collect rent, build monopolies, and compete in a **decentralized on-chain economy**.
+Players can **buy, sell, and trade virtual properties as NFTs**, collect rent, build monopolies, and compete in a **decentralized on-chain economy**. 
+Now Available on Base and Stacks
 
-This project combines **strategic gameplay** with **true ownership** and **transparent mechanics** using smart contracts and is available on base, celo and stacks. 
+This project combines **strategic gameplay** with **true ownership** and **transparent mechanics** using smart contracts.
 
 > 🚧 Currently in active development — Frontend (React + Next.js) and smart contracts are being actively improved. Join the journey!
 
@@ -15,12 +16,13 @@ This project combines **strategic gameplay** with **true ownership** and **trans
 
 | Detail          | Info |
 |-----------------|------|
-| **Contract Base Address** | `0x8122F36B24D475E5d4F103C0787EC34b8019477b` |
-| **Contract Celo Address** | `0x8654ca15F361740C45c92E4728aEf32197D01A5c` |
-| **Contract Stacks Address** | `SP81CZF1YK81CPAMS6PRS3GJSKK35MGZ2R9SNESA.tycc` |
-| **Network**     | Base sepolia |
+| **Contract Base Address** | `0xc6c2ccc0cA40d700DE2e5696f2a5e71dd838A1c4` |
+| **Contract Celo Address** | `0x7cd34f84Cf5c389C34FE9525b812A041e2299594` |
+| **Contract Stacks  Address** | `ST81CZF1YK81CPAMS6PRS3GJSKK35MGZ2VWEPSEN.tyc` |
+| **Network**     | Base | Celo | Stacks|
 | **Status**      | ✅ Deployed — Functionality under development |
-| **ERC20 Base Address** | `0x2f382911995146c5B721b7418f9D338BAB843A9d` |
+| **ERC20 Base Address** | `0x8A867F46f1A0e8bA1AF573E83B26F86Aa23e07D3` |
+| **ERC20 Celo Address** | `0x40C7c0c9277d8ACF7bCe32ed33e37865f5Ed3310` |
 
 
 ---
