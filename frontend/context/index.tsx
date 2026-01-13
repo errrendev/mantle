@@ -27,7 +27,7 @@ const modal = createAppKit({
   adapters: [wagmiAdapter],
   projectId,
   networks: [mantle, mantleSepoliaTestnet],
-  defaultNetwork: mantle,
+  defaultNetwork: mantleSepoliaTestnet,
   metadata: metadata,
   features: {
     analytics: true // Optional - defaults to your Cloud configuration
