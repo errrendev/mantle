@@ -214,7 +214,7 @@ const { data: usdcAllowance } = useReadContract({
           perk,
           strength: Number(strength),
           tycPrice: formatUnits(tycPrice, 18),
-          usdcPrice: formatUnits(usdcPrice, 18),
+          usdcPrice: formatUnits(usdcPrice, 6),
           stock: Number(stock),
           ...meta,
         };

@@ -46,7 +46,7 @@ interface GameCreateResponse {
   [key: string]: any;
 }
 
-const USDC_DECIMALS = 6;
+const USDC_DECIMALS = 18;
 const stakePresets = [1, 5, 10, 25, 50, 100];
 
 export default function CreateGameMobile() {
@@ -74,7 +74,7 @@ export default function CreateGameMobile() {
     evenBuild: true,
     randomPlayOrder: true,
     startingCash: 1500,
-    stake: 10,
+    stake: 10000000000000000000,
     duration: 60,
   });
 
