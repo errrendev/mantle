@@ -14,11 +14,11 @@ import {
   estimateGasTool,
   getBlockTool,
   getTransactionReceiptTool,
-} from "../tools/blockchainTools.js";
+} from "../tools/index.js";
 
 // Gemini model
 const llm = new ChatGoogleGenerativeAI({
-  model: "gemini-3-flash-preview",
+  model: "gemini-2.5-flash",
   temperature: 0.7,
   apiKey: process.env.GEMINI_API_KEY,
 });
