@@ -1,4 +1,4 @@
-import { createErenAgent } from "./config/eren";
+import { createErenAgent } from "./config/eren.js";
 import { HumanMessage } from "@langchain/core/messages";
 import * as readline from "readline";
 

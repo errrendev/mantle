@@ -1,7 +1,7 @@
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { z } from "zod";
 import { createPublicClient, createWalletClient, http, formatEther, parseEther } from "viem";
-import {  sepolia } from "viem/chains";
+import { sepolia } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 
 // Setup Viem clients
@@ -11,8 +11,12 @@ const publicClient = createPublicClient({
 });
 
 // Optional: Wallet client for transactions
-const account = process.env.PRIVATE_KEY 
-  ? privateKeyToAccount(`0x${process.env.PRIVATE_KEY}`)
+const account = process.env.PRIVATE_KEY
+  ? privateKeyToAccount(
+    process.env.PRIVATE_KEY.startsWith('0x')
+      ? process.env.PRIVATE_KEY as `0x${string}`
+      : `0x${process.env.PRIVATE_KEY}` as `0x${string}`
+  )
   : null;
 
 const walletClient = account ? createWalletClient({
@@ -33,7 +37,7 @@ export const getBalanceTool = new DynamicStructuredTool({
       const balance = await publicClient.getBalance({
         address: address as `0x${string}`,
       });
-      
+
       const balanceInEth = formatEther(balance);
       return `Balance: ${balanceInEth} ETH`;
     } catch (error: any) {
@@ -69,7 +73,7 @@ export const getTransactionTool = new DynamicStructuredTool({
       const tx = await publicClient.getTransaction({
         hash: hash as `0x${string}`,
       });
-      
+
       return JSON.stringify({
         from: tx.from,
         to: tx.to,
@@ -111,13 +115,13 @@ export const sendEthTool = new DynamicStructuredTool({
     if (!walletClient || !account) {
       return "Wallet not configured. Please set PRIVATE_KEY in environment variables.";
     }
-    
+
     try {
       const hash = await walletClient.sendTransaction({
         to: to as `0x${string}`,
         value: parseEther(amount),
       });
-      
+
       return `Transaction sent! Hash: ${hash}`;
     } catch (error: any) {
       return `Error sending transaction: ${error.message}`;
@@ -149,7 +153,7 @@ export const readContractTool = new DynamicStructuredTool({
         functionName: "balanceOf",
         args: [walletAddress as `0x${string}`],
       });
-      
+
       return `Token balance: ${balance}`;
     } catch (error: any) {
       return `Error reading contract: ${error.message}`;
@@ -209,7 +213,7 @@ export const getBlockTool = new DynamicStructuredTool({
       const block = await publicClient.getBlock({
         blockNumber: BigInt(blockNumber),
       });
-      
+
       return JSON.stringify({
         number: block.number,
         hash: block.hash,
@@ -236,7 +240,7 @@ export const getTransactionReceiptTool = new DynamicStructuredTool({
       const receipt = await publicClient.getTransactionReceipt({
         hash: hash as `0x${string}`,
       });
-      
+
       return JSON.stringify({
         status: receipt.status === "success" ? "Success" : "Failed",
         blockNumber: receipt.blockNumber,

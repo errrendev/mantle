@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { createReactAgent } from "@langchain/langgraph/prebuilt";
+import { validateEnvironment } from "./validateEnv.js";
 
 import {
   getBalanceTool,
@@ -13,7 +14,7 @@ import {
   estimateGasTool,
   getBlockTool,
   getTransactionReceiptTool,
-} from "../tools/blockchainTools";
+} from "../tools/blockchainTools.js";
 
 // Gemini model
 const llm = new ChatGoogleGenerativeAI({
@@ -64,6 +65,9 @@ For blockchain operations:
 `;
 
 export function createErenAgent() {
+  // Validate environment variables
+  validateEnvironment();
+
   const agent = createReactAgent({
     llm,
     tools,
