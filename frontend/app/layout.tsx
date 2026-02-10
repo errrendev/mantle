@@ -5,7 +5,6 @@ import "@/styles/globals.css";
 import { getMetadata } from "@/utils/getMeatadata";
 import { headers } from "next/headers";
 import ContextProvider from "@/context";
-import AppKitProviderWrapper from "@/components/AppKitProviderWrapper";
 import { TycoonProvider } from "@/context/ContractProvider";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -61,43 +60,41 @@ export default async function RootLayout({
         <FarcasterReady />
         <ContextProvider cookies={cookies}>
           <TycoonProvider>
-            <AppKitProviderWrapper>
-              {/* SocketProvider commented out as in your code */}
-              {/* <SocketProvider serverUrl="https://base-monopoly-production.up.railway.app/api"> */}
+            {/* SocketProvider commented out as in your code */}
+            {/* <SocketProvider serverUrl="https://base-monopoly-production.up.railway.app/api"> */}
 
-              {/* ← Use the client wrapper here—no more useMediaQuery! */}
-              <QueryProvider>
-                <ClientLayout cookies={cookies}>
-                  {children}
-                </ClientLayout>
+            {/* ← Use the client wrapper here—no more useMediaQuery! */}
+            <QueryProvider>
+              <ClientLayout cookies={cookies}>
+                {children}
+              </ClientLayout>
 
-                <ScrollToTopBtn />
-                <ToastContainer
-                  position="top-right"
-                  autoClose={5000}
-                  hideProgressBar={false}
-                  newestOnTop
-                  closeOnClick
-                  rtl={false}
-                  pauseOnFocusLoss
-                  draggable
-                  pauseOnHover
-                  theme="dark"
-                  toastStyle={{
-                    fontFamily: "Orbitron, sans-serif",
-                    background: "#0E1415",
-                    color: "#00F0FF",
-                    border: "1px solid #003B3E",
-                  }}
-                />
-                <Toaster position="top-center" />
-              </QueryProvider>
+              <ScrollToTopBtn />
+              <ToastContainer
+                position="top-right"
+                autoClose={5000}
+                hideProgressBar={false}
+                newestOnTop
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="dark"
+                toastStyle={{
+                  fontFamily: "Orbitron, sans-serif",
+                  background: "#0E1415",
+                  color: "#00F0FF",
+                  border: "1px solid #003B3E",
+                }}
+              />
+              <Toaster position="top-center" />
+            </QueryProvider>
 
-              {/* </SocketProvider> */}
-            </AppKitProviderWrapper>
+            {/* </SocketProvider> */}
           </TycoonProvider>
         </ContextProvider>
       </body>
-    </html>
+    </html >
   );
 }

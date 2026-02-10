@@ -13,6 +13,7 @@ const router = express.Router();
 router.get("/code/:code", gameController.findByCode);
 router.get("/creator/:userId", gameController.findByCreator);
 router.get("/winner/:userId", gameController.findByWinner);
+router.get("/my-games", gameController.findMyGames); // <--- NEW ROUTE
 router.get("/active", gameController.findActive);
 router.get("/pending", gameController.findPending);
 

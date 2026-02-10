@@ -121,8 +121,9 @@ export default function PlayWithAI() {
           starting_cash: settings.startingCash,
           is_ai: true,
           is_minipay: isMiniPay,
-          chain: chainName,
+          chain: "Monad Testnet", // Ensure exact match with backend user record
           duration: settings.duration,
+          username: username, // Pass username for auto-creation
           settings: {
             auction: settings.auction,
             rent_in_prison: settings.rentInPrison,
@@ -137,7 +138,10 @@ export default function PlayWithAI() {
             ? saveRes
             : saveRes?.data?.data?.id ?? saveRes?.data?.id ?? saveRes?.id;
 
-        if (!dbGameId) throw new Error("Backend did not return game ID");
+        if (!dbGameId) {
+          console.error("DEBUG: saveRes structure:", JSON.stringify(saveRes, null, 2));
+          throw new Error("Backend did not return game ID");
+        }
       } catch (backendError: any) {
         console.error("Backend save error:", backendError);
         throw new Error(backendError.response?.data?.message || "Failed to save game on server");

@@ -17,14 +17,46 @@ const gameController = {
 
   async create(req, res) {
     try {
-      const { code, mode, address, symbol, number_of_players, settings } =
-        req.body;
-      const user = await User.findByAddress(address);
+      const { code, mode, address, symbol, number_of_players, settings, chain, username } = req.body;
+
+      // Default to "Monad Testnet" if chain is not provided
+      const searchChain = chain || "Monad Testnet";
+
+      let user = await User.findByAddress(address, searchChain);
+
+      // Fallback to BASE if not found on requested chain
+      if (!user) {
+        user = await User.findByAddress(address, "BASE");
+      }
+
+      // Auto-create user if still not found but we have a username (Self-Healing)
+      if (!user && username) {
+        console.log(`User not found for ${address} on ${searchChain}. Auto-creating...`);
+        try {
+          // Check if username is taken first (optional, but good practice, though create might fail)
+          // For now let's just try to create.
+          user = await User.create({
+            username,
+            address,
+            chain: searchChain,
+            // Add other default fields if necessary, e.g. status
+          });
+        } catch (createErr) {
+          console.error("Auto-creation failed:", createErr);
+          // If creation failed (Maybe username taken?), we can't proceed.
+          return res.status(200).json({
+            success: false,
+            message: "User not found and auto-creation failed: " + createErr.message
+          });
+        }
+      }
+
       if (!user) {
         return res
           .status(200)
           .json({ success: false, message: "User not found" });
       }
+
       // check if code exist
       // create game on contract : code, mode, address, no_of_players, status, players_joined
       const game = await Game.create({
@@ -66,6 +98,68 @@ const gameController = {
       };
 
       const add_to_game_players = await GamePlayer.create(gamePlayersPayload);
+
+      // -----------------------------
+      // 🤖 AI Opponent Generation
+      // -----------------------------
+      const ai_opponents = req.body.ai_opponents;
+      if (ai_opponents && Number(ai_opponents) > 0) {
+        const aiCount = Number(ai_opponents);
+        console.log(`Generating ${aiCount} AI bots for game ${game.id}`);
+
+        for (let i = 0; i < aiCount; i++) {
+          const botNum = i + 1;
+          // Create unique bot identity for this game to avoid collisions
+          // Address format: 0xAI[GameID_Hex][BotNum] to be roughly valid hex
+          // Pad to ensure it looks like an address (42 chars total usually)
+          // GameId to hex
+          const gIdHex = game.id.toString(16).padStart(4, '0');
+          const bNumHex = botNum.toString(16).padStart(2, '0');
+          // 0x + AI + 00... + GID + BN
+          const fakeAddress = `0xAI000000000000000000000000000000${gIdHex}${bNumHex}`;
+
+          const botUsername = `AI_Bot_${botNum}`;
+
+          // Create Bot User if needed
+          let botUser = await User.findByAddress(fakeAddress, "AI_NET");
+          if (!botUser) {
+            try {
+              botUser = await User.create({
+                username: `${botUsername}_${game.code}`, // Unique name per game
+                address: fakeAddress,
+                chain: "AI_NET"
+              });
+            } catch (err) {
+              console.error(`Failed to create bot user ${botNum}:`, err);
+              // If failed (collision?), try to fetch again or skip
+              botUser = await User.findByAddress(fakeAddress, "AI_NET");
+            }
+          }
+
+          if (botUser) {
+            // Add Bot as Game Player
+            await GamePlayer.create({
+              game_id: game.id,
+              user_id: botUser.id,
+              address: botUser.address,
+              balance: settings.starting_cash,
+              position: 0,
+              turn_order: 1 + botNum, // Creator is 1
+              symbol: botNum, // Simple symbol assignment
+              chance_jail_card: false,
+              community_chest_jail_card: false,
+            });
+          }
+        }
+
+        // Check if game is now full (Creator + AIs == requested players)
+        // If so, start the game immediately
+        if (1 + aiCount >= Number(number_of_players)) {
+          console.log(`Game ${game.id} is full (AI). Starting...`);
+          await Game.update(game.id, { status: "RUNNING" });
+          game.status = "RUNNING"; // Update local object for response
+        }
+      }
 
       const game_players = await GamePlayer.findByGameId(game.id);
 
@@ -259,18 +353,107 @@ const gameController = {
       res.status(200).json({ success: false, message: error.message });
     }
   },
+  async findMyGames(req, res) {
+    try {
+      let userId;
+
+      // 1. Try to get user from auth middleware
+      if (req.user) {
+        userId = req.user.id;
+      }
+      // 2. Fallback: try to get user from query param (address)
+      else if (req.query.address) {
+        const chain = req.query.chain || "Monad Testnet"; // Default to Monad Testnet if not specified
+        const user = await User.findByAddress(req.query.address, chain);
+        if (user) {
+          userId = user.id;
+        }
+      }
+
+      if (!userId) {
+        return res.status(400).json({
+          success: false,
+          message: "User not identified. Please provide auth token or address.",
+        });
+      }
+
+      // 3. Find games where user is a player
+      const gamesPlayed = await GamePlayer.findByUserId(userId);
+      const gameIds = gamesPlayed.map((gp) => gp.game_id);
+
+      // Remove duplicates
+      const uniqueGameIds = [...new Set(gameIds)];
+
+      if (uniqueGameIds.length === 0) {
+        return res.json({
+          success: true,
+          message: "successful",
+          data: [],
+        });
+      }
+
+      // 4. Fetch full game details for these IDs
+      // We can use Game.findAll with a "whereIn" clause if it supported it, 
+      // but since Game.findAll determines logic internally, we might need a custom query 
+      // or just iterate (less efficient but works for now).
+      // BETTER: Let's fetch them.
+      // Actually, GamePlayer.findByUserId (which we called) returns:
+      // "gp.*", "g.code as game_code", "g.status as game_status"
+      // But the frontend expects the full Game object with settings and players.
+
+      // Let's create a helper to fetch active games details.
+      // For now, let's just fetch the Game objects for these IDs.
+      const games = await Promise.all(
+        uniqueGameIds.map((id) => Game.findById(id))
+      );
+
+      // Filter out nulls (if any game was deleted)
+      const validGames = games.filter((g) => g);
+
+      // 5. Eager load settings/players
+      const withSettingsAndPlayers = await Promise.all(
+        validGames.map(async (g) => ({
+          ...g,
+          settings: await GameSetting.findByGameId(g.id),
+          players: await GamePlayer.findByGameId(g.id),
+        }))
+      );
+
+      res.json({
+        success: true,
+        message: "successful",
+        data: withSettingsAndPlayers,
+      });
+    } catch (error) {
+      console.error("Error in findMyGames:", error);
+      res.status(200).json({ success: false, message: error.message });
+    }
+  },
 };
 
 export const create = async (req, res) => {
   try {
-    const { code, mode, address, symbol, number_of_players, settings } =
+    const { code, mode, address, symbol, number_of_players, settings, chain } =
       req.body;
-    const user = await User.findByAddress(address);
+
+    // Default to Monad Testnet if chain is not provided, or use the one from request
+    // This fixes the issue where users on Monad Testnet were not found in DB (because they were saved with chain="Monad Testnet" but looked up with default "BASE")
+    const searchChain = chain || "Monad Testnet";
+    const user = await User.findByAddress(address, searchChain);
+
     if (!user) {
-      return res
-        .status(200)
-        .json({ success: false, message: "User not found" });
+      console.log(`User not found for address: ${address}, chain: ${searchChain}`);
+      // Fallback: Try "BASE" just in case legacy user
+      const userBase = await User.findByAddress(address, "BASE");
+      if (!userBase) {
+        return res
+          .status(200)
+          .json({ success: false, message: `User not found on chain ${searchChain}` });
+      }
+      // If found on BASE, use it (or maybe we should migrate them? For now just use it)
     }
+
+    const finalUser = user || (await User.findByAddress(address, "BASE"));
 
     // Check if game code already exists
     const existingGame = await Game.findByCode(code);
@@ -283,11 +466,13 @@ export const create = async (req, res) => {
     const game = await Game.create({
       code,
       mode,
-      creator_id: user.id,
-      next_player_id: user.id,
+      creator_id: finalUser.id,
+      next_player_id: finalUser.id,
       number_of_players,
       status: "PENDING",
     });
+
+    console.log("Game created:", game); // DEBUG LOG to see if ID exists
 
     const gameSettingsPayload = {
       game_id: game.id,
@@ -303,8 +488,8 @@ export const create = async (req, res) => {
 
     const gamePlayersPayload = {
       game_id: game.id,
-      user_id: user.id,
-      address: user.address,
+      user_id: finalUser.id,
+      address: finalUser.address,
       balance: settings.starting_cash,
       position: 0,
       turn_order: 1,

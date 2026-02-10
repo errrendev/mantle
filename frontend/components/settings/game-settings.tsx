@@ -182,6 +182,7 @@ export default function GameSettings() {
           chain: chainName,
           duration: settings.duration,
           use_usdc: !isFreeGame,       // no USDC if free
+          username: username,          // Pass username for auto-creation
           settings: {
             auction: settings.auction,
             rent_in_prison: settings.rentInPrison,
@@ -360,8 +361,8 @@ export default function GameSettings() {
                       key={amount}
                       onClick={() => handleStakeSelect(amount)}
                       className={`py-4 rounded-xl font-bold transition-all hover:scale-105 ${settings.stake === amount
-                          ? "bg-gradient-to-br from-yellow-400 to-amber-500 text-black shadow-lg"
-                          : "bg-black/60 border border-gray-600 text-gray-300"
+                        ? "bg-gradient-to-br from-yellow-400 to-amber-500 text-black shadow-lg"
+                        : "bg-black/60 border border-gray-600 text-gray-300"
                         }`}
                     >
                       {amount} USDC

@@ -17,10 +17,10 @@ const User = {
   },
 
   /**
-   * Find by wallet address + chain
+   * Find by wallet address (Address is unique across chains for EVM)
    */
-  async findByAddress(address, chain = "BASE") {
-    return await db("users").where({ address, chain }).first();
+  async findByAddress(address) {
+    return await db("users").where({ address }).first();
   },
 
   /**

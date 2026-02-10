@@ -39,7 +39,10 @@ export const wagmiAdapter = new WagmiAdapter({
   }),
   ssr: true,
   projectId,
-  networks
+  networks,
+  transports: {
+    [monadTestnet.id]: http('https://testnet-rpc.monad.xyz'),
+  },
 })
 
 export const config = wagmiAdapter.wagmiConfig

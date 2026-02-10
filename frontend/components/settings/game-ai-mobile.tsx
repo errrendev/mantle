@@ -121,7 +121,7 @@ export default function PlayWithAIMobile() {
           starting_cash: settings.startingCash,
           is_ai: true,
           is_minipay: isMiniPay,
-          chain: chainName,
+          chain: "Monad Testnet", // Ensure exact match with backend user record
           duration: settings.duration,
           settings: {
             auction: settings.auction,

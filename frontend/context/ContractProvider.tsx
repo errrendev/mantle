@@ -345,7 +345,7 @@ export function useTransferPropertyOwnership() {
     });
   }, [
     writeContractAsync,
-    contractAddress   
+    contractAddress
   ]);
 
   return {
@@ -392,7 +392,7 @@ export function useEndAIGameAndClaim(gameId: bigint, finalPosition: number, fina
     const hash = await writeContractAsync({
       address: contractAddress,
       abi: TycoonABI,
-      functionName: 'endAIGameAndClaim',
+      functionName: 'endAIGame', // Fixed: match ABI function name
       args: [gameId, finalPosition, finalBalance, isWin],
     });
     return hash;
