@@ -44,6 +44,7 @@ export const MyEmpire: React.FC<MyEmpireProps> = ({
       <AnimatePresence>
         {showEmpire && (
           <motion.div
+            key="empire-container"
             initial={{ height: 0 }}
             animate={{ height: "auto" }}
             exit={{ height: 0 }}

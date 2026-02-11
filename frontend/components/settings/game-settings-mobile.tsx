@@ -244,6 +244,7 @@ export default function CreateGameMobile() {
           mortgage: settings.mortgage,
           even_build: settings.evenBuild,
           randomize_play_order: settings.randomPlayOrder,
+          starting_cash: settings.startingCash,
         },
       });
 
@@ -405,8 +406,8 @@ export default function CreateGameMobile() {
                     key={amt}
                     onClick={() => handleStakeSelect(amt)}
                     className={`py-3 rounded-xl font-bold text-sm transition-all active:scale-95 ${settings.stake === amt
-                        ? "bg-gradient-to-br from-yellow-400 to-amber-500 text-black shadow-lg"
-                        : "bg-black/65 border border-gray-600 text-gray-300"
+                      ? "bg-gradient-to-br from-yellow-400 to-amber-500 text-black shadow-lg"
+                      : "bg-black/65 border border-gray-600 text-gray-300"
                       }`}
                   >
                     {amt}

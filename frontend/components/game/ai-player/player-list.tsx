@@ -77,7 +77,8 @@ const PlayerList: React.FC<PlayerListProps> = ({
 
   return (
     <div className={compact ? "space-y-2" : "space-y-3"}>
-      {reorderedPlayers.map((p) => {
+      {reorderedPlayers.map((p, idx) => {
+        const pKey = p.user_id || p.address || `player-${idx}`;
         const isMe = p.address?.toLowerCase() === connectedAddress?.toLowerCase();
         const isTurn = p.user_id === game.next_player_id;
         const canTrade = isNext && !p.in_jail && !isMe;
@@ -93,7 +94,7 @@ const PlayerList: React.FC<PlayerListProps> = ({
 
         return (
           <motion.div
-            key={p.user_id}
+            key={pKey}
             whileTap={{ scale: 0.96 }}
             onClick={() => handlePlayerTap(p)}
             className={`
@@ -154,6 +155,7 @@ const PlayerList: React.FC<PlayerListProps> = ({
             <AnimatePresence>
               {(isSelected || (compact && canTrade)) && !compact && !onPlayerSelect && (
                 <motion.div
+                  key={`trade-btn-${p.user_id}`}
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}

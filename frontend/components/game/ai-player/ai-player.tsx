@@ -118,7 +118,17 @@ export default function GamePlayers({
     setRequestProperties([]);
   };
 
-  // Show victory modal when a winner is detected (for spectators)
+  // Monitor game state to detect winner (for spectators)
+  useEffect(() => {
+    if (game.status === "RUNNING" && game.players && game.players.length === 1) {
+      const gameWinner = game.players[0];
+      if (!winner || winner.user_id !== gameWinner.user_id) {
+        setWinner(gameWinner);
+      }
+    }
+  }, [game, winner]);
+
+  // Show victory modal when a winner is detected
   useEffect(() => {
     if (winner && winner.user_id) {
       // Delay slightly to ensure all animations settle
@@ -801,6 +811,7 @@ export default function GamePlayers({
       {/* All Modals */}
       <AnimatePresence>
         <PropertyActionModal
+          key="modal-property-action"
           property={selectedProperty}
           onClose={() => setSelectedProperty(null)}
           onDevelop={handleDevelopment}
@@ -819,12 +830,14 @@ export default function GamePlayers({
         /> */}
 
         <AiResponsePopup
+          key="popup-ai-response"
           popup={aiResponsePopup}
           properties={properties}
           onClose={() => setAiResponsePopup(null)}
         />
 
         <VictoryModal
+          key="modal-victory"
           winner={winner}
           me={me}
           onClaim={handleFinalizeAndLeave}
@@ -832,12 +845,14 @@ export default function GamePlayers({
         />
 
         <SpectatorVictoryModal
+          key="modal-spectator-victory"
           winner={winner}
           isOpen={showVictoryModal}
           onClose={() => setShowVictoryModal(false)}
         />
 
         <TradeModal
+          key="modal-trade-request"
           open={tradeModal.open}
           title={`Trade with ${tradeModal.target?.username || "Player"}`}
           onClose={() => {
@@ -861,6 +876,7 @@ export default function GamePlayers({
         />
 
         <TradeModal
+          key="modal-trade-counter"
           open={counterModal.open}
           title="Counter Offer"
           onClose={() => {
@@ -886,6 +902,7 @@ export default function GamePlayers({
         />
 
         <ClaimPropertyModal
+          key="modal-claim-property"
           open={claimModalOpen && isDevMode}
           game_properties={game_properties}
           properties={properties}

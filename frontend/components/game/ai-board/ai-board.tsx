@@ -350,7 +350,7 @@ const AiBoard = ({
 
       // 1. On-chain minimal proof (counters update) - skip if AI is involved
       if (!isAiAction) {
-        await transferOwnership('', buyerUsername);
+        await transferOwnership('', buyerUsername!);
       }
 
       // 2. Update backend
@@ -554,8 +554,9 @@ const AiBoard = ({
 
   const calculateTradeFavorability = (
     trade: { offer_properties: number[]; offer_amount: number; requested_properties: number[]; requested_amount: number },
-    receiverAddress: string
+    receiverAddress: string | undefined
   ) => {
+    if (!receiverAddress) return 0;
     let score = 0;
 
     score += trade.offer_amount - trade.requested_amount;
@@ -588,7 +589,8 @@ const AiBoard = ({
     return completesSet ? Math.floor(basePrice * 1.6) : Math.floor(basePrice * 1.3);
   };
 
-  const getPropertyToOffer = (playerAddress: string, excludeGroups: string[] = []) => {
+  const getPropertyToOffer = (playerAddress: string | undefined, excludeGroups: string[] = []) => {
+    if (!playerAddress) return null;
     const owned = getPlayerOwnedProperties(playerAddress, game_properties, properties);
     const candidates = owned.filter(o => {
       const group = Object.keys(MONOPOLY_STATS.colorGroups).find(g =>
@@ -668,13 +670,12 @@ const AiBoard = ({
     // Note: If backend removes players from DB, game.players will shrink.
     if (game.players && game.players.length === 1) {
       const winner = game.players[0];
-      // Only set winner if not already set
       setEndGameCandidate((prev) =>
         prev.winner?.user_id === winner.user_id
           ? prev
           : { winner, position: winner.position, balance: BigInt(winner.balance) }
       );
-      toast.success(`${winner.username} WINS THE GAME! 🏆`);
+      // Removed toast to favor full victory modal in ai-player.tsx
     }
   }, [game]);
 

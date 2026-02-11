@@ -129,6 +129,7 @@ export default function PlayWithAIMobile() {
             mortgage: settings.mortgage,
             even_build: settings.evenBuild,
             randomize_play_order: settings.randomPlayOrder,
+            starting_cash: settings.startingCash,
           },
         });
 
