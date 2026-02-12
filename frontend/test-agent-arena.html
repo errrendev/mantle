@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Arena Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .result {
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 4px solid #007bff;
+        }
+        .success {
+            border-left-color: #28a745;
+        }
+        .error {
+            border-left-color: #dc3545;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .feature-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        .feature-title {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .feature-desc {
+            color: #666;
+            line-height: 1.5;
+        }
+        .api-endpoint {
+            background: #f8f9fa;
+            padding: 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9em;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🤖 Agent Arena System</h1>
+    <p>Complete system for AI agents to play against each other and earn money!</p>
+    
+    <h2>✨ Features Implemented</h2>
+    <div class="feature-grid">
+        <div class="feature-card">
+            <div class="feature-title">🎯 Auto-Matchmaking</div>
+            <div class="feature-desc">
+                Agents automatically find opponents based on skill level and strategy preferences. 
+                Quick matches (5 min) or strategic games (15 min).
+            </div>
+        </div>
+        
+        <div class="feature-card">
+            <div class="feature-title">🏆 Tournament System</div>
+            <div class="feature-desc">
+                Create tournaments with multiple agents, entry fees, and prize pools. 
+                Round-robin format with automatic reward distribution.
+            </div>
+        </div>
+        
+        <div class="feature-card">
+            <div class="feature-title">💰 Reward System</div>
+            <div class="feature-desc">
+                Automatic reward distribution based on game performance:
+                <ul>
+                    <li>1st Place: $100</li>
+                    <li>2nd Place: $50</li>
+                    <li>3rd Place: $25</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="feature-card">
+            <div class="feature-title">📊 Live Game Tracking</div>
+            <div class="feature-desc">
+                Real-time WebSocket updates showing:
+                <ul>
+                    <li>Current turn and round</li>
+                    <li>Player balances and strategies</li>
+                    <li>Game status and time remaining</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="feature-card">
+            <div class="feature-title">🧠 AI Decision Engine</div>
+            <div class="feature-desc">
+                Heuristic-based decision making with configurable strategies:
+                <ul>
+                    <li>Aggressive: High risk, high reward</li>
+                    <li>Balanced: Moderate approach</li>
+                    <li>Defensive: Conservative play</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="feature-card">
+            <div class="feature-title">🎮 Game Modes</div>
+            <div class="feature-desc">
+                Multiple game types for different play styles:
+                <ul>
+                    <li>Quick Match: Fast-paced games</li>
+                    <li>Strategic: Longer, thoughtful games</li>
+                    <li>Tournament: Multi-agent competitions</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <h2>🔧 API Endpoints</h2>
+    <div class="result">
+        <h3>Matchmaking & Games</h3>
+        <div class="api-endpoint">POST /api/agent-matchmaking/match</div>
+        <p>Find opponent and start quick/strategic match</p>
+        
+        <div class="api-endpoint">POST /api/agent-matchmaking/tournament</div>
+        <p>Create tournament with multiple agents</p>
+        
+        <div class="api-endpoint">GET /api/agent-matchmaking/games/active</div>
+        <p>Get all currently active agent games</p>
+    </div>
+
+    <h2>🧪 Test System</h2>
+    <button class="test-button" onclick="testMatchmaking()">Test Matchmaking</button>
+    <button class="test-button" onclick="testActiveGames()">Test Active Games</button>
+    <div id="test-result"></div>
+
+    <h2>🚀 Frontend Interface</h2>
+    <div class="result success">
+        <h3>Agent Arena Component Created</h3>
+        <p><strong>File:</strong> /frontend/components/AgentArena.tsx</p>
+        <p><strong>Route:</strong> /app/arena/page.tsx</p>
+        <p><strong>URL:</strong> <a href="http://localhost:3000/arena" target="_blank">http://localhost:3000/arena</a></p>
+    </div>
+
+    <h2>🎯 How to Use</h2>
+    <div class="result">
+        <h3>1. Enable Auto-Play</h3>
+        <p>Make sure agents have <code>auto_play: true</code> in database</p>
+        
+        <h3>2. Visit Agent Arena</h3>
+        <p>Go to <a href="http://localhost:3000/arena" target="_blank">http://localhost:3000/arena</a></p>
+        
+        <h3>3. Select Agents</h3>
+        <p>Choose agents to participate in games</p>
+        
+        <h3>4. Start Games</h3>
+        <p>Quick Match for 1v1 or Tournament for multi-agent battles</p>
+        
+        <h3>5. Watch & Earn</h3>
+        <p>Watch games in real-time and earn rewards based on performance!</p>
+    </div>
+
+    <script>
+        async function testMatchmaking() {
+            const resultDiv = document.getElementById('test-result');
+            resultDiv.innerHTML = '<div class="result">Testing matchmaking...</div>';
+            
+            try {
+                const response = await fetch('http://localhost:3002/api/agent-matchmaking/match', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        agentId: 1,
+                        gameType: 'quick'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="result ${data.success ? 'success' : 'error'}">
+                        <h3>${data.success ? '✅' : '❌'} Matchmaking Test</h3>
+                        <p><strong>Message:</strong> ${data.message}</p>
+                        ${data.success ? `<p><strong>Game ID:</strong> ${data.data.gameId}</p>` : ''}
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <h3>❌ Test Failed</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        async function testActiveGames() {
+            const resultDiv = document.getElementById('test-result');
+            resultDiv.innerHTML = '<div class="result">Testing active games...</div>';
+            
+            try {
+                const response = await fetch('http://localhost:3002/api/agent-matchmaking/games/active');
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `
+                    <div class="result ${data.success ? 'success' : 'error'}">
+                        <h3>${data.success ? '✅' : '❌'} Active Games Test</h3>
+                        <p><strong>Active Games:</strong> ${data.data ? data.data.length : 0}</p>
+                        <p><strong>Status:</strong> ${data.success ? 'Working' : 'Failed'}</p>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <h3>❌ Test Failed</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

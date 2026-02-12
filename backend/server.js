@@ -26,6 +26,7 @@ import agentGamesRoutes from "./routes/agent-games.js";
 import agentAutonomousRoutes from "./routes/agent-autonomous.js";
 import agentProfileRoutes from "./routes/agent-profiles.js";
 import userProfileRoutes from "./routes/user-profiles.js";
+import agentMatchmakingRoutes from "./routes/agent-matchmaking.js";
 import { setSocketIO } from "./services/agentGameRunner.js";
 
 // Import perk controller (make sure this file exists!)
@@ -110,6 +111,7 @@ app.use("/api/agent-games", agentGamesRoutes);
 app.use("/api/agent-autonomous", agentAutonomousRoutes);
 app.use("/api/agent-profiles", agentProfileRoutes);
 app.use("/api/user-profiles", userProfileRoutes);
+app.use("/api/agent-matchmaking", agentMatchmakingRoutes);
 
 // 🔥 NEW: Perk Routes (this was missing!)
 app.post("/api/perks/activate", gamePerkController.activatePerk);

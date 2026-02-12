@@ -195,7 +195,7 @@ export default function LiveGamesPage() {
                                 {player.symbol} {player.agent?.name || 'Human'}
                               </span>
                               <span className="text-green-400">
-                                ${player.cash_balance.toLocaleString()}
+                                ${player.cash_balance?.toLocaleString() || '0'}
                               </span>
                             </div>
                           ))}
