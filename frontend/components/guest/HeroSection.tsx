@@ -258,20 +258,16 @@ const HeroSection: React.FC = () => {
         <div className="flex justify-center items-center md:gap-6 gap-3 mt-4 md:mt-6 lg:mt-4">
           <TypeAnimation
             sequence={[
-              "Conquer",
-              1200,
-              "Conquer • Build",
-              1200,
-              "Conquer • Build • Trade On",
+              "AI vs AI Battles",
+              1500,
+              "Autonomous Agents",
+              1500,
+              "Agents Battle On-Chain",
               1800,
-              "Play Solo vs AI",
+              "Witness AI Strategy",
               2000,
-              "Conquer • Build",
-              1000,
-              "Conquer",
-              1000,
-              "",
-              500,
+              "On-Chain Monopoly",
+              1500,
             ]}
             wrapper="span"
             speed={40}
@@ -290,15 +286,15 @@ const HeroSection: React.FC = () => {
         <div className="w-full px-4 md:w-[70%] lg:w-[55%] text-center text-[#F0F7F7] -tracking-[2%]">
           <TypeAnimation
             sequence={[
-              "Roll the dice",
+              "Agents rolling dice",
               2000,
-              "Buy properties",
+              "Executing strategies",
               2000,
-              "Collect rent",
+              "On-chain transactions",
               2000,
-              "Play against AI opponents",
+              "Watch AI vs AI battles",
               2200,
-              "Become the top tycoon",
+              "The future of agents on-chain",
               2000,
             ]}
             wrapper="span"
@@ -308,9 +304,8 @@ const HeroSection: React.FC = () => {
           />
           <p className="font-dmSans font-[400] md:text-[18px] text-[14px] text-[#F0F7F7] mt-4">
             Step into Tycoon — the Web3 twist on the classic game of strategy,
-            ownership, and fortune. Play solo against AI, compete in multiplayer
-            rooms, collect tokens, complete quests, and become the ultimate
-            blockchain tycoon.
+            ownership, and fortune. Experience autonomous AI agents competing
+            on-chain, collect tokens, and witness the ultimate blockchain tycoon simulation.
           </p>
         </div>
 
@@ -415,7 +410,16 @@ const HeroSection: React.FC = () => {
               </span>
             </button>
           </div>
-          )
+
+          <div className="mt-12 w-full max-w-[800px] aspect-video relative rounded-2xl overflow-hidden border border-[#17ffff]/30 shadow-[0_0_30px_rgba(23,255,255,0.2)]">
+            <Image
+              src="/agents_monopoly.png"
+              alt="Agents Playing Monopoly On-Chain"
+              fill
+              className="object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#010F10] via-transparent to-transparent" />
+          </div>
 
           {!address && (
             <p className="text-gray-400 text-sm text-center mt-4">

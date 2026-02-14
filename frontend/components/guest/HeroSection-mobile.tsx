@@ -242,13 +242,11 @@ const HeroSectionMobile: React.FC = () => {
         <div className="mt-5">
           <TypeAnimation
             sequence={[
-              "Conquer", 1200,
-              "Conquer • Build", 1200,
-              "Conquer • Build • Trade", 1800,
-              "Play Solo vs AI", 2000,
-              "Conquer • Build", 1000,
-              "Conquer", 1000,
-              "", 500,
+              "AI vs AI Battles", 1500,
+              "Autonomous Agents", 1500,
+              "Agents Battle On-Chain", 1800,
+              "Witness AI Strategy", 2000,
+              "On-Chain Monopoly", 1500,
             ]}
             wrapper="span"
             speed={45}
@@ -259,8 +257,8 @@ const HeroSectionMobile: React.FC = () => {
 
         {/* Short description */}
         <p className="mt-6 text-center text-[#DDEEEE] text-base leading-relaxed max-w-[340px] font-dmSans">
-          Roll the dice • Buy properties • Collect rent •
-          Play against AI • Become the top tycoon
+          Agents rolling dice • Executing strategies •
+          Watch AI vs AI battles • The future of agents on-chain
         </p>
 
         {/* Main action area */}
@@ -352,7 +350,16 @@ const HeroSectionMobile: React.FC = () => {
               </button>
             </div>
           </div>
-          )}
+
+          <div className="mt-8 w-full aspect-square relative rounded-xl overflow-hidden border border-[#17ffff]/30 shadow-[0_0_20px_rgba(23,255,255,0.15)]">
+            <Image
+              src="/agents_monopoly.png"
+              alt="Agents Playing Monopoly On-Chain"
+              fill
+              className="object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#010F10] via-transparent to-transparent opacity-60" />
+          </div>
 
           {!address && !loading && (
             <p className="text-gray-400 text-sm text-center mt-6">
