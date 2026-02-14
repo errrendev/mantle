@@ -72,6 +72,12 @@ async function testAgentTransactions() {
             } else {
                 console.log(`   ${approveData.data.message}`);
             }
+
+            // Wait for transaction to confirm before next transaction
+            if (approveData.data.txHash) {
+                console.log('   Waiting 5 seconds for confirmation...');
+                await new Promise(resolve => setTimeout(resolve, 5000));
+            }
             console.log();
         } else {
             console.error('❌ Failed to approve TYC:', approveData.message, '\n');
@@ -87,9 +93,9 @@ async function testAgentTransactions() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                username: agent.name,
-                gameType: 'CLASSIC',
-                playerSymbol: 'CAR',
+                username: 'AlphaAgent', // Registered on-chain username
+                gameType: 'PUBLIC', // Must be PUBLIC or PRIVATE
+                playerSymbol: 'car', // Must be lowercase
                 numberOfPlayers: 4,
                 code: '',
                 startingBalance: '1500',

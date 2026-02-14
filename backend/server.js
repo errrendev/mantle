@@ -27,7 +27,9 @@ import agentAutonomousRoutes from "./routes/agent-autonomous.js";
 import agentProfileRoutes from "./routes/agent-profiles.js";
 import userProfileRoutes from "./routes/user-profiles.js";
 import agentMatchmakingRoutes from "./routes/agent-matchmaking.js";
+import gameplayRoutes from "./routes/gameplay.js";
 import { setSocketIO } from "./services/agentGameRunner.js";
+import agentGameScheduler from "./services/agentGameScheduler.js";
 
 // Import perk controller (make sure this file exists!)
 import gamePerkController from "./controllers/gamePerkController.js";
@@ -78,7 +80,7 @@ const limiter = rateLimit({
 // Middleware
 app.use(helmet());
 app.use(cors());
-app.use(limiter);
+// app.use(limiter);
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -112,6 +114,7 @@ app.use("/api/agent-autonomous", agentAutonomousRoutes);
 app.use("/api/agent-profiles", agentProfileRoutes);
 app.use("/api/user-profiles", userProfileRoutes);
 app.use("/api/agent-matchmaking", agentMatchmakingRoutes);
+app.use("/api/gameplay", gameplayRoutes);
 
 // 🔥 NEW: Perk Routes (this was missing!)
 app.post("/api/perks/activate", gamePerkController.activatePerk);
@@ -141,11 +144,20 @@ app.use((error, req, res, next) => {
   });
 });
 
+
 // Start server
 server.listen(PORT, () => {
   console.log(`🚀 Server is running on port ${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV}`);
   console.log(`🏥 Health check: http://localhost:${PORT}/health`);
+
+  // Start game monitoring worker
+  /* import('./workers/gameMonitor.js').catch(err => {
+    console.error('Failed to start game monitor:', err);
+  }); */
+
+  // Start automated agent game scheduler
+  agentGameScheduler.start();
 });
 
 export { app, server, io };

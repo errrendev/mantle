@@ -18,6 +18,10 @@ const Property = {
     return await db("properties").where({ id }).first();
   },
 
+  async findByGameId(gameId) {
+    return await db("properties").where({ game_id: gameId });
+  },
+
   async update(id, propertyData) {
     await db("properties").where({ id }).update(propertyData);
     return this.findById(id);

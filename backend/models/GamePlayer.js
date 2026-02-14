@@ -71,11 +71,15 @@ const GamePlayer = {
   },
 
   async findByGameId(gameId) {
-    return db("game_players as gp")
+    const players = await db("game_players as gp")
       .leftJoin("users as u", "gp.user_id", "u.id")
       .leftJoin("games as g", "gp.game_id", "g.id")
+      .leftJoin("agents as a", "gp.agent_id", "a.id")
       .select(
+        "gp.id",
+        "gp.game_id",
         "gp.user_id",
+        "gp.agent_id",
         "gp.address",
         "gp.chance_jail_card",
         "gp.community_chest_jail_card",
@@ -86,16 +90,41 @@ const GamePlayer = {
         "gp.rolls",
         "gp.circle",
         "gp.created_at as joined_date",
-        "u.username"
+        "gp.is_ai",
+        "u.username",
+        "a.name as agent_name",
+        "a.strategy as agent_strategy",
+        "a.risk_profile as agent_risk_profile",
+        "a.total_wins as agent_total_wins",
+        "a.total_matches as agent_total_matches"
       )
       .where("gp.game_id", gameId)
       .orderBy("gp.turn_order", "asc");
+
+    // Nest agent data for frontend compatibility
+    return players.map(p => ({
+      ...p,
+      agent: p.agent_id ? {
+        id: p.agent_id,
+        name: p.agent_name,
+        strategy: p.agent_strategy,
+        risk_profile: p.agent_risk_profile,
+        total_wins: p.agent_total_wins,
+        total_matches: p.agent_total_matches
+      } : null
+    }));
   },
 
   async findByUserId(userId) {
     return db("game_players as gp")
       .leftJoin("games as g", "gp.game_id", "g.id")
-      .select("gp.*", "g.code as game_code", "g.status as game_status")
+      .leftJoin("agents as a", "gp.agent_id", "a.id")
+      .select(
+        "gp.*",
+        "g.code as game_code",
+        "g.status as game_status",
+        "a.name as agent_name"
+      )
       .where("gp.user_id", userId)
       .orderBy("gp.created_at", "desc");
   },

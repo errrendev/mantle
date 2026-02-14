@@ -7,6 +7,9 @@ const agentProfileController = {
   // Safe JSON parsing method
   safeJsonParse(jsonString) {
     try {
+      if (typeof jsonString === 'object' && jsonString !== null) {
+        return jsonString;
+      }
       return JSON.parse(jsonString);
     } catch (error) {
       console.error('JSON parsing error:', error);
@@ -18,7 +21,7 @@ const agentProfileController = {
   async getAgentProfile(req, res) {
     try {
       const { agentId } = req.params;
-      
+
       if (!agentId) {
         return res.status(400).json({
           success: false,
@@ -37,16 +40,16 @@ const agentProfileController = {
 
       // Get detailed stats
       const detailed_stats = await agentProfileController.getDetailedStats(agentId);
-      
+
       // Get performance metrics
       const performance_metrics = await agentProfileController.getPerformanceMetrics(agentId);
-      
+
       // Get recent games
       const recent_games = await agentProfileController.getRecentGames(agentId);
-      
+
       // Get rewards
       const rewards = await agentProfileController.getRewards(agentId);
-      
+
       // Get live game info
       const live_game = agentProfileController.getCurrentLiveGameInfo(agentId);
 
@@ -69,7 +72,12 @@ const agentProfileController = {
             created_at: agent.created_at,
             updated_at: agent.updated_at,
             owner_address: agent.owner_address,
-            username: agent.username
+            username: agent.username,
+            owner_email: agent.owner_email,
+            wallet_address: agent.wallet_address,
+            eth_balance: agent.eth_balance,
+            tyc_balance: agent.tyc_balance,
+            usdc_balance: agent.usdc_balance
           },
           detailed_stats,
           performance_metrics,
@@ -80,8 +88,8 @@ const agentProfileController = {
       });
     } catch (error) {
       console.error("Error fetching agent profile:", error);
-      res.status(500).json({ 
-        success: false, 
+      res.status(500).json({
+        success: false,
         message: "Failed to fetch agent profile",
         error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
@@ -117,7 +125,7 @@ const agentProfileController = {
   async getPerformanceMetrics(agentId) {
     try {
       const recentGames = await this.getRecentGames(agentId);
-      
+
       if (!recentGames || recentGames.length === 0) {
         return {
           avg_final_balance: 0,
@@ -134,9 +142,9 @@ const agentProfileController = {
       const totalProperties = recentGames.reduce((sum, game) => sum + game.properties_owned, 0);
       const totalRank = recentGames.reduce((sum, game) => sum + game.rank, 0);
       const ranks = recentGames.map(game => game.rank);
-      
+
       const recentForm = this.calculateRecentForm(recentGames);
-      
+
       return {
         avg_final_balance: Math.round(totalBalance / recentGames.length),
         avg_properties_owned: Math.round(totalProperties / recentGames.length),
@@ -187,7 +195,7 @@ const agentProfileController = {
       const totalRewards = await AgentReward.getTotalRewardsByAgent(agentId);
       const claimableRewards = await AgentReward.getClaimableRewards(agentId);
       const recentRewards = await AgentReward.findByAgentId(agentId, { limit: 5 });
-      
+
       return {
         total: totalRewards,
         claimable: claimableRewards,
@@ -215,16 +223,16 @@ const agentProfileController = {
   getCurrentLiveGameInfo(agentId) {
     try {
       const liveGames = AgentGameRunner.getLiveGames();
-      const currentGame = liveGames.find(game => 
+      const currentGame = liveGames.find(game =>
         game.agents_playing.some(playingAgent => playingAgent.id === parseInt(agentId))
       );
-      
+
       if (!currentGame) {
         return null;
       }
-      
+
       const agentInGame = currentGame.agents_playing.find(agent => agent.id === parseInt(agentId));
-      
+
       return {
         game_id: currentGame.game_id,
         current_turn: currentGame.current_turn,
@@ -245,11 +253,11 @@ const agentProfileController = {
     if (!recentGames || recentGames.length === 0) {
       return 'no_games';
     }
-    
+
     const last5Games = recentGames.slice(0, 5);
     const wins = last5Games.filter(game => game.won).length;
     const winRate = wins / last5Games.length;
-    
+
     if (winRate >= 0.8) return 'excellent';
     if (winRate >= 0.6) return 'good';
     if (winRate >= 0.4) return 'average';

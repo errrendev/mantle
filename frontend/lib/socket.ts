@@ -101,6 +101,12 @@ class SocketService {
     }
   }
 
+  onAgentTurnCompleted(callback: (data: any) => void): void {
+    if (this.socket) {
+      this.socket.on("agent_turn_completed", callback);
+    }
+  }
+
   // Remove event listeners
   removeListener(event: string, callback: (...args: any[]) => void): void {
     if (this.socket) {

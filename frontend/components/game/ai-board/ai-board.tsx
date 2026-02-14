@@ -17,6 +17,7 @@ import {
   PROPERTY_ACTION,
 } from "@/types/game";
 import { apiClient } from "@/lib/api";
+import { socketService } from "@/lib/socket";
 
 // Child components
 import BoardSquare from "./board-square";
@@ -265,6 +266,7 @@ const AiBoard = ({
     if (game?.players) setPlayers(game.players);
   }, [game?.players]);
 
+  // Sync players via polling (fallback)
   useEffect(() => {
     const interval = setInterval(async () => {
       try {
@@ -278,6 +280,72 @@ const AiBoard = ({
     }, 8000);
     return () => clearInterval(interval);
   }, [game.code]);
+
+  // Listen for autonomous agent turns via Socket.IO
+  useEffect(() => {
+    // Only for autonomous games (no creator/host driving it)
+    // If it's an agent-only game, even the host should listen to the server
+    if (isHost && !game.is_agent_only) return;
+
+    // Connect socket
+    const socket = socketService.connect(process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3002");
+    if (game.code) socketService.joinGameRoom(game.code);
+
+    const handleAgentTurn = async (data: any) => {
+      // data: { game_id, player, action, dice_roll, position, reasoning }
+
+      // Use == for type adjustment (string vs number)
+      if (data.game_id != game.id) return;
+
+      // Find the player who moved
+      const movedPlayer = players.find(p =>
+        p.username === data.player || (p.agent_name && p.agent_name === data.player)
+      );
+
+      if (movedPlayer) {
+        showToast(`🎲 ${data.player} rolled ${data.dice_roll}`, "default");
+
+        // Animate movement
+        const currentPos = movedPlayer.position ?? 0;
+        const totalMove = data.dice_roll;
+        const userId = movedPlayer.user_id;
+
+        // Animate step by step
+        for (let i = 1; i <= totalMove; i++) {
+          await new Promise((resolve) => setTimeout(resolve, MOVE_ANIMATION_MS_PER_SQUARE));
+          setAnimatedPositions((prev) => ({
+            ...prev,
+            [userId]: (currentPos + i) % BOARD_SQUARES,
+          }));
+        }
+
+        // After animation, refresh game state to get exact sync (balances, etc)
+        try {
+          const res = await apiClient.get<ApiResponse>(`/games/code/${game.code}`);
+          if (res?.data?.success && res.data.data?.players) {
+            setPlayers(res.data.data.players);
+          }
+        } catch (err) {
+          console.error("Sync failed after turn:", err);
+        }
+
+        // Clear animation override after a bit
+        setTimeout(() => {
+          setAnimatedPositions((prev) => {
+            const newMap = { ...prev };
+            delete newMap[userId];
+            return newMap;
+          });
+        }, 1000);
+      }
+    };
+
+    socketService.onAgentTurnCompleted(handleAgentTurn);
+
+    return () => {
+      socketService.removeListener("agent_turn_completed", handleAgentTurn);
+    }
+  }, [game.id, game.code, players, isHost, showToast]);
 
   // Reset turn state
   useEffect(() => {

@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import herobg from "@/public/heroBg.png";
 import Image from "next/image";
-import { Dices, Gamepad2, Trophy, Play } from "lucide-react";
+import { Trophy, Play } from "lucide-react";
 import { TypeAnimation } from "react-type-animation";
 import { useRouter } from "next/navigation";
 import { useAccount } from "wagmi";
@@ -360,171 +360,62 @@ const HeroSection: React.FC = () => {
             </button>
           )}
 
-          {/* Action buttons for fully registered users */}
-          {address && registrationStatus === "fully-registered" && (
-            <div className="flex flex-wrap justify-center items-center gap-4">
-              {/* Continue Previous Game - Highlighted */}
-              {gameCode && (contractGame?.status == 1) && (
-                <button
-                  onClick={handleContinuePrevious}
-                  className="relative group w-[300px] h-[56px] bg-transparent border-none p-0 overflow-hidden cursor-pointer transition-transform group-hover:scale-105"
-                >
-                  <svg
-                    width="300"
-                    height="56"
-                    viewBox="0 0 300 56"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="absolute top-0 left-0 w-full h-full transform scale-x-[-1] group-hover:animate-pulse"
-                  >
-                    <path
-                      d="M12 1H288C293.373 1 296 7.85486 293.601 12.5127L270.167 54.5127C269.151 56.0646 267.42 57 265.565 57H12C8.96244 57 6.5 54.5376 6.5 51.5V9.5C6.5 6.46243 8.96243 4 12 4Z"
-                      fill="#00F0FF"
-                      stroke="#0E282A"
-                      strokeWidth={2}
-                    />
-                  </svg>
-                  <span className="absolute inset-0 flex items-center justify-center text-[#010F10] text-[20px] font-orbitron font-[700] z-2">
-                    <Gamepad2 className="mr-2 w-7 h-7" />
-                    Continue Game
-                  </span>
-                </button>
-              )}
-
-              {/* Play with Friends */}
-              <button
-                onClick={() => router.push("/game-settings")}
-                className="relative group w-[227px] h-[40px] bg-transparent border-none p-0 overflow-hidden cursor-pointer"
+          <div className="flex flex-wrap justify-center items-center gap-4">
+            {/* Leaderboard */}
+            <button
+              onClick={() => router.push("/leaderboard")}
+              className="relative group w-[227px] h-[40px] bg-transparent border-none p-0 overflow-hidden cursor-pointer"
+            >
+              <svg
+                width="227"
+                height="40"
+                viewBox="0 0 227 40"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="absolute top-0 left-0 w-full h-full transform scale-x-[-1] scale-y-[-1]"
               >
-                <svg
-                  width="227"
-                  height="40"
-                  viewBox="0 0 227 40"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="absolute top-0 left-0 w-full h-full transform scale-x-[-1] scale-y-[-1]"
-                >
-                  <path
-                    d="M6 1H221C225.373 1 227.996 5.85486 225.601 9.5127L207.167 37.5127C206.151 39.0646 204.42 40 202.565 40H6C2.96244 40 0.5 37.5376 0.5 34.5V6.5C0.5 3.46243 2.96243 1 6 1Z"
-                    fill="#003B3E"
-                    stroke="#003B3E"
-                    strokeWidth={1}
-                    className="group-hover:stroke-[#00F0FF] transition-all duration-300"
-                  />
-                </svg>
-                <span className="absolute inset-0 flex items-center justify-center text-[#00F0FF] capitalize text-[12px] font-dmSans font-medium z-2">
-                  <Gamepad2 className="mr-1.5 w-[16px] h-[16px]" />
-                  Multiplayer
-                </span>
-              </button>
+                <path
+                  d="M6 1H221C225.373 1 227.996 5.85486 225.601 9.5127L207.167 37.5127C206.151 39.0646 204.42 40 202.565 40H6C2.96244 40 0.5 37.5376 0.5 34.5V6.5C0.5 3.46243 2.96243 1 6 1Z"
+                  fill="#0E1415"
+                  stroke="#003B3E"
+                  strokeWidth={1}
+                  className="group-hover:stroke-[#00F0FF] transition-all duration-300"
+                />
+              </svg>
+              <span className="absolute inset-0 flex items-center justify-center text-[#00F0FF] capitalize text-[12px] font-dmSans font-medium z-2">
+                <Trophy className="mr-1.5 w-[16px] h-[16px]" />
+                Leaderboard
+              </span>
+            </button>
 
-              {/* Join Room */}
-              <button
-                onClick={() => router.push("/join-room")}
-                className="relative group w-[140px] h-[40px] bg-transparent border-none p-0 overflow-hidden cursor-pointer"
+            {/* Live Games */}
+            <button
+              onClick={() => router.push("/live-games")}
+              className="relative group w-[140px] h-[40px] bg-transparent border-none p-0 overflow-hidden cursor-pointer"
+            >
+              <svg
+                width="140"
+                height="40"
+                viewBox="0 0 140 40"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="absolute top-0 left-0 w-full h-full"
               >
-                <svg
-                  width="140"
-                  height="40"
-                  viewBox="0 0 140 40"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="absolute top-0 left-0 w-full h-full"
-                >
-                  <path
-                    d="M6 1H134C138.373 1 140.996 5.85486 138.601 9.5127L120.167 37.5127C119.151 39.0646 117.42 40 115.565 40H6C2.96244 40 0.5 37.5376 0.5 34.5V6.5C0.5 3.46243 2.96243 1 6 1Z"
-                    fill="#0E1415"
-                    stroke="#003B3E"
-                    strokeWidth={1}
-                    className="group-hover:stroke-[#00F0FF] transition-all duration-300"
-                  />
-                </svg>
-                <span className="absolute inset-0 flex items-center justify-center text-[#0FF0FC] capitalize text-[12px] font-dmSans font-medium z-2">
-                  <Dices className="mr-1.5 w-[16px] h-[16px]" />
-                  Join Room
-                </span>
-              </button>
-
-              {/* Challenge AI */}
-              <button
-                onClick={() => router.push("/play-ai")}
-                className="relative group w-[260px] h-[52px] bg-transparent border-none p-0 overflow-hidden cursor-pointer transition-transform duration-300 group-hover:scale-105"
-              >
-                <svg
-                  width="260"
-                  height="52"
-                  viewBox="0 0 260 52"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="absolute top-0 left-0 w-full h-full transform scale-x-[-1] group-hover:animate-pulse"
-                >
-                  <path
-                    d="M10 1H250C254.373 1 256.996 6.85486 254.601 10.5127L236.167 49.5127C235.151 51.0646 233.42 52 231.565 52H10C6.96244 52 4.5 49.5376 4.5 46.5V9.5C4.5 6.46243 6.96243 4 10 4Z"
-                    fill="#00F0FF"
-                    stroke="#0E282A"
-                    strokeWidth={1}
-                  />
-                </svg>
-                <span className="absolute inset-0 flex items-center justify-center text-[#010F10] uppercase text-[16px] -tracking-[2%] font-orbitron font-[700] z-2">
-                  Challenge AI!
-                </span>
-              </button>
-
-              {/* Leaderboard */}
-              <button
-                onClick={() => router.push("/leaderboard")}
-                className="relative group w-[227px] h-[40px] bg-transparent border-none p-0 overflow-hidden cursor-pointer"
-              >
-                <svg
-                  width="227"
-                  height="40"
-                  viewBox="0 0 227 40"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="absolute top-0 left-0 w-full h-full transform scale-x-[-1] scale-y-[-1]"
-                >
-                  <path
-                    d="M6 1H221C225.373 1 227.996 5.85486 225.601 9.5127L207.167 37.5127C206.151 39.0646 204.42 40 202.565 40H6C2.96244 40 0.5 37.5376 0.5 34.5V6.5C0.5 3.46243 2.96243 1 6 1Z"
-                    fill="#0E1415"
-                    stroke="#003B3E"
-                    strokeWidth={1}
-                    className="group-hover:stroke-[#00F0FF] transition-all duration-300"
-                  />
-                </svg>
-                <span className="absolute inset-0 flex items-center justify-center text-[#00F0FF] capitalize text-[12px] font-dmSans font-medium z-2">
-                  <Trophy className="mr-1.5 w-[16px] h-[16px]" />
-                  Leaderboard
-                </span>
-              </button>
-
-              {/* Live Games */}
-              <button
-                onClick={() => router.push("/live-games")}
-                className="relative group w-[140px] h-[40px] bg-transparent border-none p-0 overflow-hidden cursor-pointer"
-              >
-                <svg
-                  width="140"
-                  height="40"
-                  viewBox="0 0 140 40"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="absolute top-0 left-0 w-full h-full"
-                >
-                  <path
-                    d="M6 1H134C138.373 1 140.996 5.85486 138.601 9.5127L120.167 37.5127C119.151 39.0646 117.42 40 115.565 40H6C2.96244 40 0.5 37.5376 0.5 34.5V6.5C0.5 3.46243 2.96243 1 6 1Z"
-                    fill="#0E1415"
-                    stroke="#003B3E"
-                    strokeWidth={1}
-                    className="group-hover:stroke-[#00F0FF] transition-all duration-300"
-                  />
-                </svg>
-                <span className="absolute inset-0 flex items-center justify-center text-[#0FF0FC] capitalize text-[12px] font-dmSans font-medium z-2">
-                  <Play className="mr-1.5 w-[16px] h-[16px]" />
-                  Live
-                </span>
-              </button>
-            </div>
-          )}
+                <path
+                  d="M6 1H134C138.373 1 140.996 5.85486 138.601 9.5127L120.167 37.5127C119.151 39.0646 117.42 40 115.565 40H6C2.96244 40 0.5 37.5376 0.5 34.5V6.5C0.5 3.46243 2.96243 1 6 1Z"
+                  fill="#0E1415"
+                  stroke="#003B3E"
+                  strokeWidth={1}
+                  className="group-hover:stroke-[#00F0FF] transition-all duration-300"
+                />
+              </svg>
+              <span className="absolute inset-0 flex items-center justify-center text-[#0FF0FC] capitalize text-[12px] font-dmSans font-medium z-2">
+                <Play className="mr-1.5 w-[16px] h-[16px]" />
+                Live
+              </span>
+            </button>
+          </div>
+          )
 
           {!address && (
             <p className="text-gray-400 text-sm text-center mt-4">

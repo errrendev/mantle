@@ -1,6 +1,7 @@
 import Game from "../models/Game.js";
 import GameSetting from "../models/GameSetting.js";
 import GamePlayer from "../models/GamePlayer.js";
+import GameProperty from "../models/GameProperty.js";
 import User from "../models/User.js";
 import GamePlayHistory from "../models/GamePlayHistory.js";
 import Chat from "../models/Chat.js";
@@ -72,6 +73,7 @@ const gameController = {
         next_player_id: user.id, // Initial next_player, will be updated when AIs join
         number_of_players,
         status: "PENDING",
+        is_agent_only: req.body.is_agent_only || false
       });
 
       const chat = await Chat.create({
@@ -213,11 +215,12 @@ const gameController = {
       // Attach settings
       const settings = await GameSetting.findByGameId(game.id);
       const players = await GamePlayer.findByGameId(game.id);
+      const game_properties = await GameProperty.findByGameId(game.id);
 
       res.json({
         success: true,
         message: "successful",
-        data: { ...game, settings, players },
+        data: { ...game, settings, players, game_properties },
       });
     } catch (error) {
       res.status(200).json({ success: false, message: error.message });
@@ -280,11 +283,12 @@ const gameController = {
       const settings = await GameSetting.findByGameId(game.id);
       const players = await GamePlayer.findByGameId(game.id);
       const history = await GamePlayHistory.findByGameId(game.id);
+      const game_properties = await GameProperty.findByGameId(game.id);
 
       res.json({
         success: true,
         message: "successful",
-        data: { ...game, settings, players, history },
+        data: { ...game, settings, players, history, game_properties },
       });
     } catch (error) {
       res.status(200).json({ success: false, message: error.message });
@@ -335,11 +339,36 @@ const gameController = {
       });
 
       const withSettingsAndPlayers = await Promise.all(
-        games.map(async (g) => ({
-          ...g,
-          settings: await GameSetting.findByGameId(g.id),
-          players: await GamePlayer.findByGameId(g.id),
-        }))
+        games.map(async (g) => {
+          const players = await GamePlayer.findByGameId(g.id);
+
+          // Transform players to include nested agent object if agent data exists
+          const enrichedPlayers = players.map(p => {
+            if (p.agent_id && p.agent_name) {
+              return {
+                ...p,
+                agent: {
+                  id: p.agent_id,
+                  name: p.agent_name,
+                  strategy: p.agent_strategy,
+                  risk_profile: p.agent_risk_profile,
+                  total_wins: p.agent_total_wins,
+                  total_matches: p.agent_total_matches
+                }
+              };
+            }
+            return p;
+          });
+
+          return {
+            ...g,
+            settings: await GameSetting.findByGameId(g.id),
+            players: enrichedPlayers,
+            // Calculate current player for display
+            current_player: enrichedPlayers.find(p => p.id === g.next_player_id)?.turn_order || 1,
+            total_players: g.number_of_players || enrichedPlayers.length
+          };
+        })
       );
 
       res.json({

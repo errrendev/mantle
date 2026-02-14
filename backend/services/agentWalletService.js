@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { privateKeyToAccount } from 'viem/accounts';
 import { encryptPrivateKey } from '../utils/encryption.js';
 import Agent from '../models/Agent.js';
 
@@ -7,13 +8,14 @@ import Agent from '../models/Agent.js';
  * Handles wallet generation, funding, and on-chain registration for agents
  */
 
-const MONAD_RPC_URL = process.env.MONAD_RPC_URL || 'https://testnet.monad.xyz';
+// Constants
 const TYCOON_CONTRACT = process.env.TYCOON_CONTRACT_ADDRESS;
+const TYC_TOKEN = process.env.TYC_TOKEN_ADDRESS;
+const MONAD_RPC_URL = process.env.MONAD_RPC_URL;
 const TREASURY_PRIVATE_KEY = process.env.TREASURY_PRIVATE_KEY;
-const TREASURY_ADDRESS = process.env.TREASURY_ADDRESS;
 
-// Minimum ETH for gas fees (0.01 ETH)
-const INITIAL_GAS_FUNDING = BigInt('10000000000000000'); // 0.01 ETH in wei
+// Initial gas funding: 0.05 ETH (increased to cover registration tx)
+const INITIAL_GAS_FUNDING = BigInt(50000000000000000); // 0.05 ETH in wei
 
 /**
  * Generate a new wallet for an agent
@@ -24,10 +26,9 @@ export function generateWallet() {
     const privateKeyBytes = crypto.randomBytes(32);
     const privateKey = '0x' + privateKeyBytes.toString('hex');
 
-    // For now, we'll use a simple address derivation
-    // In production, use proper secp256k1 to derive address from private key
-    const addressBytes = crypto.createHash('sha256').update(privateKeyBytes).digest();
-    const address = '0x' + addressBytes.slice(0, 20).toString('hex');
+    // Properly derive Ethereum address from private key using viem
+    const account = privateKeyToAccount(privateKey);
+    const address = account.address;
 
     return { privateKey, address };
 }
@@ -39,16 +40,74 @@ export function generateWallet() {
  */
 export async function fundAgentWallet(agentAddress, amount = INITIAL_GAS_FUNDING) {
     try {
-        // This would use viem to send ETH from treasury
-        // For now, return success (implement actual transfer later)
-        console.log(`[WALLET SERVICE] Funding ${agentAddress} with ${amount} wei`);
+        console.log(`[WALLET SERVICE] Funding ${agentAddress} with ${amount} wei from treasury...`);
 
-        // TODO: Implement actual ETH transfer from treasury
-        // const { createWalletClient, http, parseEther } = await import('viem');
-        // const { privateKeyToAccount } = await import('viem/accounts');
-        // ... send transaction
+        if (!TREASURY_PRIVATE_KEY) {
+            console.warn('[WALLET SERVICE] ⚠️ TREASURY_PRIVATE_KEY not configured. Skipping funding.');
+            return { success: false, skipped: true, message: 'Treasury not configured' };
+        }
 
-        return { success: true, txHash: '0x...' };
+        const { createWalletClient, createPublicClient, http } = await import('viem');
+        const { privateKeyToAccount } = await import('viem/accounts');
+
+        // Chain configuration for Monad Testnet
+        const monadTestnet = {
+            id: 10143,
+            name: 'Monad Testnet',
+            network: 'monad-testnet',
+            nativeCurrency: {
+                decimals: 18,
+                name: 'Monad',
+                symbol: 'MON',
+            },
+            rpcUrls: {
+                default: { http: [MONAD_RPC_URL] },
+                public: { http: [MONAD_RPC_URL] },
+            },
+        };
+
+        // Create treasury account
+        const treasuryAccount = privateKeyToAccount(TREASURY_PRIVATE_KEY);
+
+        // Create wallet client
+        const walletClient = createWalletClient({
+            account: treasuryAccount,
+            chain: monadTestnet,
+            transport: http(MONAD_RPC_URL),
+        });
+
+        // Create public client
+        const publicClient = createPublicClient({
+            chain: monadTestnet,
+            transport: http(MONAD_RPC_URL),
+        });
+
+        // Send ETH to agent wallet
+        const txHash = await walletClient.sendTransaction({
+            to: agentAddress,
+            value: amount,
+        });
+
+        console.log(`[WALLET SERVICE] Funding tx submitted: ${txHash}`);
+
+        // Wait for confirmation
+        const receipt = await publicClient.waitForTransactionReceipt({
+            hash: txHash,
+            confirmations: 1
+        });
+
+        if (receipt.status === 'success') {
+            console.log(`[WALLET SERVICE] ✅ Funded ${agentAddress} with ${amount} wei (${Number(amount) / 1e18} ETH)`);
+        } else {
+            throw new Error('Funding transaction failed');
+        }
+
+        return {
+            success: true,
+            txHash,
+            amount: amount.toString(),
+            amountEth: (Number(amount) / 1e18).toString()
+        };
     } catch (error) {
         console.error('[WALLET SERVICE] Error funding wallet:', error);
         throw new Error(`Failed to fund agent wallet: ${error.message}`);
@@ -65,19 +124,72 @@ export async function registerAgentOnChain(agentName, privateKey) {
     try {
         console.log(`[WALLET SERVICE] Registering ${agentName} on-chain...`);
 
-        // TODO: Implement actual on-chain registration
-        // This would:
-        // 1. Create wallet client with agent's private key
-        // 2. Call Tycoon.registerPlayer(agentName)
-        // 3. Wait for transaction confirmation
-        // 4. Agent automatically receives 2 TYC vouchers
+        const { createWalletClient, createPublicClient, http } = await import('viem');
+        const { privateKeyToAccount } = await import('viem/accounts');
+        const { TYCOON_ABI } = await import('../config/tycoonAbi.js');
 
-        // Placeholder for now
-        const txHash = '0x' + crypto.randomBytes(32).toString('hex');
+        // Chain configuration for Monad Testnet
+        const monadTestnet = {
+            id: 10143,
+            name: 'Monad Testnet',
+            network: 'monad-testnet',
+            nativeCurrency: {
+                decimals: 18,
+                name: 'Monad',
+                symbol: 'MON',
+            },
+            rpcUrls: {
+                default: { http: [MONAD_RPC_URL] },
+                public: { http: [MONAD_RPC_URL] },
+            },
+        };
+
+        // Create account from private key
+        const account = privateKeyToAccount(privateKey);
+
+        // Create wallet client
+        const walletClient = createWalletClient({
+            account,
+            chain: monadTestnet,
+            transport: http(MONAD_RPC_URL),
+        });
+
+        // Create public client for reading
+        const publicClient = createPublicClient({
+            chain: monadTestnet,
+            transport: http(MONAD_RPC_URL),
+        });
+
+        console.log(`[WALLET SERVICE] Calling Tycoon.registerPlayer("${agentName}")...`);
+
+        // Call Tycoon.registerPlayer(agentName)
+        const txHash = await walletClient.writeContract({
+            address: TYCOON_CONTRACT,
+            abi: TYCOON_ABI,
+            functionName: 'registerPlayer',
+            args: [agentName],
+        });
+
+        console.log(`[WALLET SERVICE] Registration tx submitted: ${txHash}`);
+        console.log(`[WALLET SERVICE] Waiting for confirmation...`);
+
+        // Wait for transaction confirmation
+        const receipt = await publicClient.waitForTransactionReceipt({
+            hash: txHash,
+            confirmations: 1
+        });
+
+        if (receipt.status === 'success') {
+            console.log(`[WALLET SERVICE] ✅ ${agentName} registered on-chain successfully!`);
+            console.log(`[WALLET SERVICE] Agent received 2 TYC vouchers (redeemable for tokens)`);
+        } else {
+            throw new Error('Transaction failed');
+        }
 
         return {
             success: true,
             txHash,
+            blockNumber: receipt.blockNumber.toString(),
             message: 'Agent registered on-chain and received 2 TYC vouchers'
         };
     } catch (error) {
@@ -93,7 +205,7 @@ export async function registerAgentOnChain(agentName, privateKey) {
  */
 export async function createAgentWithWallet(agentData) {
     try {
-        const { name, owner_address, strategy, risk_profile, config } = agentData;
+        const { name, owner_address, owner_email, strategy, risk_profile, config } = agentData;
 
         // Step 1: Generate wallet
         console.log(`[WALLET SERVICE] Generating wallet for ${name}...`);
@@ -115,6 +227,7 @@ export async function createAgentWithWallet(agentData) {
             name,
             address: wallet.address, // This is now the blockchain wallet address
             owner_address,
+            owner_email,
             strategy: strategy || 'balanced',
             risk_profile: risk_profile || strategy || 'balanced',
             config: typeof config === 'string' ? config : JSON.stringify(config || {}),

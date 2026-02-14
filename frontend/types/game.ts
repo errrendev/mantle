@@ -50,6 +50,7 @@ export interface Game {
   settings: GameSettings;
   players: Player[];
   history: History[];
+  is_agent_only?: boolean | number;
 }
 
 export interface GameSettings {
@@ -75,6 +76,7 @@ export interface Player {
   circle: number;
   in_jail: boolean;
   in_jail_rolls: number;
+  agent_name?: string;
 }
 
 export interface GamePlayExtra {

@@ -104,9 +104,9 @@ export default function PlayWithAI() {
 
     try {
       try {
-        toast.update(toastId, { render: "Creating AI game on-chain..." });
-        const onChainGameId = await createAiGame();
-        if (!onChainGameId) throw new Error("Failed to create game on-chain");
+        // toast.update(toastId, { render: "Creating AI game on-chain..." });
+        // const onChainGameId = await createAiGame();
+        // if (!onChainGameId) throw new Error("Failed to create game on-chain");
 
         toast.update(toastId, { render: "Saving game to server..." });
 
@@ -116,7 +116,7 @@ export default function PlayWithAI() {
         const totalPlayers = settings.spectateMode ? settings.aiCount : settings.aiCount + 1;
 
         const saveRes: GameCreateResponse = await apiClient.post("/games", {
-          id: onChainGameId.toString(),
+       
           code: gameCode,
           mode: "PRIVATE",
           address: address, // Creator address

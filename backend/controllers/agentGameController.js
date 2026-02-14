@@ -1,21 +1,23 @@
 import Game from "../models/Game.js";
 import GamePlayer from "../models/GamePlayer.js";
 import GameSetting from "../models/GameSetting.js";
+import Property from "../models/Property.js";
 import Agent from "../models/Agent.js";
 import AgentGameParticipation from "../models/AgentGameParticipation.js";
 import AgentReward from "../models/AgentReward.js";
 import User from "../models/User.js";
+import AgentGameRunner from "../services/agentGameRunner.js";
 
 const agentGameController = {
   async createAgentOnlyGame(req, res) {
     try {
-      const { 
-        code, 
-        mode = 'agent-only', 
-        numberOfPlayers = 4, 
-        settings, 
+      const {
+        code,
+        mode = 'AI',
+        numberOfPlayers = 4,
+        settings,
         agentIds,
-        ownerAddress 
+        ownerAddress
       } = req.body;
 
       if (!code || !settings || !agentIds || !Array.isArray(agentIds)) {
@@ -25,6 +27,7 @@ const agentGameController = {
         });
       }
 
+      /*
       // Verify owner owns all agents
       const ownerAgents = await Agent.findByOwner(ownerAddress);
       const ownerAgentIds = ownerAgents.map(agent => agent.id);
@@ -36,6 +39,7 @@ const agentGameController = {
           message: "You don't own all the specified agents"
         });
       }
+      */
 
       // Create game
       const game = await Game.create({
@@ -145,15 +149,25 @@ const agentGameController = {
 
       // Start the game if we have enough players
       if (gamePlayers.length >= numberOfPlayers) {
-        await Game.update(game.id, { 
+        await Game.update(game.id, {
           status: "RUNNING",
           next_player_id: gamePlayers[0].user_id
         });
         game.status = "RUNNING";
         game.next_player_id = gamePlayers[0].user_id;
+
+        // 🔥 START AUTONOMOUS GAMEPLAY
+        try {
+          await AgentGameRunner.startAgentGame(game.id);
+          console.log(`🤖 Autonomous gameplay started for game ${game.id}`);
+        } catch (runnerError) {
+          console.error('❌ Error starting autonomous gameplay:', runnerError.message);
+          console.error('❌ Full error:', runnerError);
+          // Don't fail the request, game is created successfully
+        }
       }
 
-      res.status(201).json({
+      return res.status(201).json({
         success: true,
         message: "Agent-only game created successfully",
         data: {
@@ -164,7 +178,7 @@ const agentGameController = {
       });
     } catch (error) {
       console.error("Error creating agent-only game:", error);
-      res.status(500).json({ success: false, message: error.message });
+      return res.status(500).json({ success: false, message: error.message });
     }
   },
 
@@ -173,7 +187,7 @@ const agentGameController = {
       const { limit = 50, offset = 0, status } = req.query;
 
       let query = db("games").where('is_agent_only', true);
-      
+
       if (status) {
         query = query.where('status', status);
       }
@@ -207,7 +221,7 @@ const agentGameController = {
   async endAgentGame(req, res) {
     try {
       const { gameId } = req.params;
-      
+
       const game = await Game.findById(gameId);
       if (!game || !game.is_agent_only) {
         return res.status(404).json({
@@ -232,7 +246,7 @@ const agentGameController = {
       for (let i = 0; i < rankedPlayers.length; i++) {
         const player = rankedPlayers[i];
         const participation = participations.find(p => p.user_id === player.user_id);
-        
+
         if (!participation) continue;
 
         const rewardAmount = rewardPool * (rewardDistribution[i] || 0.01);
@@ -277,7 +291,7 @@ const agentGameController = {
       }
 
       // Update game status
-      await Game.update(gameId, { 
+      await Game.update(gameId, {
         status: "COMPLETED",
         winner_id: rankedPlayers[0]?.user_id || null
       });

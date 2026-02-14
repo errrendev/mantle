@@ -2,8 +2,147 @@ import AgentGameRunner from "../services/agentGameRunner.js";
 import Agent from "../models/Agent.js";
 import AgentGameParticipation from "../models/AgentGameParticipation.js";
 import Game from "../models/Game.js";
+import GamePlayer from "../models/GamePlayer.js";
+import User from "../models/User.js";
+import GameSetting from "../models/GameSetting.js";
+import Chat from "../models/Chat.js";
 
 const agentAutonomousController = {
+  // Auto-start autonomous battle - follows same flow as frontend
+  async autoStartBattle(req, res) {
+    try {
+      const { agentCount = 4, settings = {} } = req.body;
+
+      console.log(`🤖 [AUTO-START] Starting autonomous battle with ${agentCount} agents...`);
+
+      // 1. Select available agents
+      const busyAgentIds = AgentGameRunner.getBusyAgentIds();
+      const allAgents = await Agent.findAll({ limit: 100 });
+      const availableAgents = allAgents.filter(a => !busyAgentIds.includes(a.id));
+
+      if (availableAgents.length < agentCount) {
+        return res.status(400).json({
+          success: false,
+          message: `Not enough available agents. Need ${agentCount}, found ${availableAgents.length}`
+        });
+      }
+
+      const selectedAgents = availableAgents
+        .sort(() => 0.5 - Math.random())
+        .slice(0, agentCount);
+
+      console.log(`✅ [AUTO-START] Selected agents:`, selectedAgents.map(a => a.name));
+
+      // 2. Create game (same as frontend POST /api/games)
+      const gameCode = `AUTO_${Date.now()}`;
+
+      // Create system user if not exists
+      let systemUser = await User.findByAddress("0x0000000000000000000000000000000000000000", "AI_NET");
+      if (!systemUser) {
+        systemUser = await User.create({
+          username: "AutoSystem",
+          address: "0x0000000000000000000000000000000000000000",
+          chain: "AI_NET"
+        });
+      }
+
+      // Create game
+      const game = await Game.create({
+        code: gameCode,
+        mode: "AI",
+        creator_id: systemUser.id,
+        next_player_id: systemUser.id,
+        number_of_players: agentCount,
+        status: "PENDING",
+        is_agent_only: true // Required for AgentGameRunner
+      });
+
+      // Create chat
+      await Chat.create({
+        game_id: game.id,
+        status: "open"
+      });
+
+      // Create game settings
+      await GameSetting.create({
+        game_id: game.id,
+        auction: settings.auction ?? true,
+        rent_in_prison: settings.rent_in_prison ?? true,
+        mortgage: settings.mortgage ?? true,
+        even_build: settings.even_build ?? false,
+        randomize_play_order: settings.randomize_play_order ?? true,
+        starting_cash: settings.starting_cash || 1500
+      });
+
+      console.log(`✅ [AUTO-START] Game created with ID: ${game.id}`);
+
+      // 3. Add AI players (same as frontend POST /api/game-players/join)
+      const symbols = ['car', 'dog', 'hat', 'thimble', 'boot', 'battleship'];
+
+      for (let i = 0; i < selectedAgents.length; i++) {
+        const agent = selectedAgents[i];
+
+        // Get or create user for agent
+        let agentUser = await User.findByAddress(agent.address, 'AI_NET');
+        if (!agentUser) {
+          agentUser = await User.create({
+            username: agent.name,
+            address: agent.address,
+            chain: 'AI_NET'
+          });
+        }
+
+        // Add as game player
+        await GamePlayer.create({
+          game_id: game.id,
+          user_id: agentUser.id,
+          agent_id: agent.id, // Required for AgentGameRunner to load agent data
+          is_ai: true,
+          address: agent.address,
+          balance: settings.starting_cash || 1500,
+          position: 0,
+          turn_order: i + 1,
+          symbol: symbols[i],
+          chance_jail_card: false,
+          community_chest_jail_card: false
+        });
+      }
+
+      console.log(`✅ [AUTO-START] Added ${selectedAgents.length} AI players`);
+
+      // 4. Start game (same as frontend PUT /api/games/{id})
+      await Game.update(game.id, { status: "RUNNING" });
+
+      console.log(`🎮 [AUTO-START] Game started! Code: ${gameCode}`);
+
+      // 5. Start autonomous execution
+      await AgentGameRunner.startAgentGame(game.id);
+      console.log(`🤖 [AUTO-START] Agent runner started for game ${game.id}`);
+
+      return res.status(201).json({
+        success: true,
+        message: "Autonomous battle started successfully",
+        data: {
+          game_id: game.id,
+          game_code: gameCode,
+          agents: selectedAgents.map(a => ({
+            id: a.id,
+            name: a.name,
+            strategy: a.strategy
+          })),
+          spectate_url: `http://localhost:3000/ai-play?gameCode=${gameCode}`,
+          autonomous_mode: true
+        }
+      });
+    } catch (error) {
+      console.error('❌ [AUTO-START] Error:', error);
+      return res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  },
+
   // Start autonomous agent-only game
   async startAutonomousGame(req, res) {
     try {
@@ -13,18 +152,6 @@ const agentAutonomousController = {
         return res.status(400).json({
           success: false,
           message: "At least 2 agent IDs required"
-        });
-      }
-
-      // Verify owner owns all agents
-      const ownerAgents = await Agent.findByOwner(ownerAddress);
-      const ownerAgentIds = ownerAgents.map(agent => agent.id);
-      const hasPermission = agentIds.every(id => ownerAgentIds.includes(id));
-
-      if (!hasPermission) {
-        return res.status(403).json({
-          success: false,
-          message: "You don't own all the specified agents"
         });
       }
 
@@ -40,7 +167,8 @@ const agentAutonomousController = {
       };
 
       // Import and use agentGameController
-      const { createAgentOnlyGame } = await import('./agentGameController.js');
+      const agentGameControllerModule = await import('./agentGameController.js');
+      const { createAgentOnlyGame } = agentGameControllerModule.default;
       const gameResponse = await createAgentOnlyGame({
         body: {
           code: gameCode,
@@ -97,19 +225,17 @@ const agentAutonomousController = {
   async getGameState(req, res) {
     try {
       const { gameId } = req.params;
-      
       const gameState = AgentGameRunner.getGameState(parseInt(gameId));
-      
+
       if (!gameState) {
         return res.status(404).json({
           success: false,
-          message: "Game not found or not active"
+          message: "Game not found or not running"
         });
       }
 
       res.json({
         success: true,
-        message: "successful",
         data: gameState
       });
     } catch (error) {
@@ -122,221 +248,49 @@ const agentAutonomousController = {
   async stopAutonomousGame(req, res) {
     try {
       const { gameId } = req.params;
-      
-      AgentGameRunner.stopGame(parseInt(gameId));
-
-      // Update game status in database
-      await Game.update(parseInt(gameId), {
-        status: 'STOPPED'
-      });
+      await AgentGameRunner.stopAgentGame(parseInt(gameId));
 
       res.json({
         success: true,
-        message: "Autonomous game stopped successfully"
+        message: "Game stopped successfully"
       });
     } catch (error) {
-      console.error("Error stopping autonomous game:", error);
+      console.error("Error stopping game:", error);
       res.status(500).json({ success: false, message: error.message });
     }
   },
 
-  // Get agent performance analytics
-  async getAgentAnalytics(req, res) {
+  // Get agent participation history
+  async getAgentHistory(req, res) {
     try {
       const { agentId } = req.params;
-      
-      const agent = await Agent.findById(agentId);
-      if (!agent) {
-        return res.status(404).json({
-          success: false,
-          message: "Agent not found"
-        });
-      }
-
-      // Get participation stats
-      const stats = await AgentGameParticipation.getAgentStats(agentId);
-      
-      // Get recent participations
-      const recentGames = await AgentGameParticipation.findByAgentId(agentId, {
-        limit: 10,
-        offset: 0
-      });
-
-      // Calculate performance metrics
-      const analytics = {
-        agent_id: agentId,
-        agent_name: agent.name,
-        strategy: agent.strategy,
-        risk_profile: agent.risk_profile,
-        overall_stats: stats,
-        recent_performance: recentGames.map(game => ({
-          game_id: game.game_id,
-          final_balance: game.final_balance,
-          won: game.won,
-          rank: game.rank,
-          properties_owned: game.properties_owned,
-          finished_at: game.finished_at
-        })),
-        win_rate_trend: this.calculateWinRateTrend(recentGames),
-        average_balance_trend: this.calculateBalanceTrend(recentGames),
-        strategy_effectiveness: await this.calculateStrategyEffectiveness(agentId)
-      };
-
-      res.json({
-        success: true,
-        message: "successful",
-        data: analytics
-      });
+      const history = await Agent.getHistory(agentId);
+      res.json({ success: true, data: history });
     } catch (error) {
-      console.error("Error fetching agent analytics:", error);
       res.status(500).json({ success: false, message: error.message });
     }
   },
 
-  // Get leaderboard with live games context
-  async getEnhancedLeaderboard(req, res) {
+  // NEW: Start runner for existing game (called by script)
+  async startRunner(req, res) {
     try {
-      const { limit = 50, offset = 0, metric = 'total_revenue' } = req.query;
-      
-      // Get basic leaderboard (now includes all agents)
-      const leaderboard = await Agent.getLeaderboard({
-        limit: parseInt(limit),
-        offset: parseInt(offset),
-        metric
-      });
+      const { gameId } = req.params;
+      console.log(`🚀 Starting autonomous runner for game ${gameId}`);
 
-      // Enrich with live game participation
-      const liveGames = AgentGameRunner.getLiveGames();
-      const enhancedLeaderboard = await Promise.all(
-        leaderboard.map(async (agent) => {
-          // Get stats for agents with matches, otherwise provide defaults
-          let stats;
-          try {
-            stats = await AgentGameParticipation.getAgentStats(agent.id);
-          } catch (error) {
-            // Agent with no matches - provide default stats
-            stats = {
-              totalGames: 0,
-              wins: 0,
-              winRate: 0,
-              avgFinalBalance: 0,
-              avgPropertiesOwned: 0,
-              avgRank: 0
-            };
-          }
-
-          const currentlyPlaying = liveGames.some(game => 
-            game.agents_playing.some(playingAgent => playingAgent.id === agent.id)
-          );
-
-          // Calculate win rate if not present or use calculated one
-          const winRate = parseFloat(agent.calculated_win_rate) || parseFloat(agent.win_rate) || parseFloat(stats.winRate) || 0;
-
-          return {
-            ...agent,
-            win_rate: winRate, // Ensure win_rate is always a number
-            stats,
-            currently_playing: currentlyPlaying,
-            live_game_info: currentlyPlaying ? 
-              liveGames.find(game => 
-                game.agents_playing.some(playingAgent => playingAgent.id === agent.id)
-              ) : null
-          };
-        })
-      );
-
-      res.json({
-        success: true,
-        message: "successful",
-        data: enhancedLeaderboard
-      });
-    } catch (error) {
-      console.error("Error fetching enhanced leaderboard:", error);
-      res.status(500).json({ success: false, message: error.message });
-    }
-  },
-
-  // Batch create agents with different strategies
-  async createAgentBatch(req, res) {
-    try {
-      const { 
-        baseName, 
-        ownerAddress, 
-        strategies = ['aggressive', 'balanced', 'defensive'],
-        count = 3 
-      } = req.body;
-
-      if (!baseName || !ownerAddress) {
-        return res.status(400).json({
-          success: false,
-          message: "Base name and owner address are required"
-        });
+      // Ensure game exists
+      const game = await Game.findById(gameId);
+      if (!game) {
+        return res.status(404).json({ success: false, message: "Game not found" });
       }
 
-      const createdAgents = [];
+      // Start runner
+      AgentGameRunner.startAgentGame(game.id);
 
-      for (let i = 0; i < count; i++) {
-        const strategy = strategies[i % strategies.length];
-        const agentName = `${baseName}_${strategy}_${i + 1}`;
-        
-        const agent = await Agent.create({
-          name: agentName,
-          address: `0xAUTO${Date.now()}${i}`,
-          owner_address: ownerAddress,
-          strategy,
-          risk_profile: strategy,
-          config: JSON.stringify({
-            autonomous_mode: true,
-            decision_engine: 'heuristic_scoring',
-            reasoning_model: 'Gemini_2.5_Flash'
-          })
-        });
-
-        createdAgents.push(agent);
-      }
-
-      res.status(201).json({
-        success: true,
-        message: `${count} agents created successfully`,
-        data: createdAgents
-      });
+      res.json({ success: true, message: "Runner started" });
     } catch (error) {
-      console.error("Error creating agent batch:", error);
+      console.error("Failed to start runner:", error);
       res.status(500).json({ success: false, message: error.message });
     }
-  },
-
-  // Helper methods
-  calculateWinRateTrend(games) {
-    if (games.length < 5) return null;
-    
-    const recent = games.slice(0, 5);
-    const wins = recent.filter(g => g.won).length;
-    return (wins / recent.length) * 100;
-  },
-
-  calculateBalanceTrend(games) {
-    if (games.length < 5) return null;
-    
-    const recent = games.slice(0, 5);
-    const avgBalance = recent.reduce((sum, g) => sum + (g.final_balance || 0), 0) / recent.length;
-    return avgBalance;
-  },
-
-  async calculateStrategyEffectiveness(agentId) {
-    // This would involve more complex analysis of strategy vs performance
-    // For now, return basic metrics
-    const stats = await AgentGameParticipation.getAgentStats(agentId);
-    
-    return {
-      win_rate: stats.winRate,
-      avg_final_balance: stats.avgFinalBalance,
-      avg_properties_owned: stats.avgPropertiesOwned,
-      avg_rank: stats.avgRank,
-      effectiveness_score: (stats.winRate * 0.4) + 
-                          ((stats.avgFinalBalance / 1000) * 0.3) + 
-                          ((10 - stats.avgRank) * 0.3)
-    };
   }
 };
 

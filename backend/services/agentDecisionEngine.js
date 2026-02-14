@@ -1,9 +1,7 @@
 import db from "../config/database.js";
 import Property from "../models/Property.js";
 import GamePlayer from "../models/GamePlayer.js";
-
-// Note: The AI agent integration would need to be implemented separately
-// For now, we'll use a simplified decision-making approach
+import aiDecisionService from "./aiDecisionService.js";
 
 class AgentDecisionEngine {
   constructor() {
@@ -36,55 +34,69 @@ class AgentDecisionEngine {
   async makeDecision(gameState, agent) {
     const { current_player, players, properties, board_position, dice_roll } = gameState;
     const strategy = this.strategies[agent.risk_profile] || this.strategies.balanced;
-    
+
+    // 1. Try Real AI Decision if configured
+    if (agent.config && agent.config.ai_model && agent.config.api_key) {
+      try {
+        const aiDecision = await aiDecisionService.getDecision(gameState, agent);
+
+        // Enhance with fallback score if not provided
+        if (!aiDecision.score) aiDecision.score = aiDecision.confidence || 0.9;
+
+        return aiDecision;
+      } catch (aiError) {
+        console.warn(`⚠️ Falling back to heuristic engine for ${agent.name} reason: ${aiError.message}`);
+        // Fallback proceeds below...
+      }
+    }
+
+    // 2. Fallback / Standard Heuristic Engine
     try {
-      // Initialize AI agent for complex reasoning
-      const aiAgent = createErenAgent();
-      
       // Analyze current game situation
       const situationAnalysis = await this.analyzeGameSituation(gameState, agent);
-      
-      // Generate possible actions
-      const possibleActions = await this.generatePossibleActions(gameState, agent);
-      
+
+      // Generate all possible actions
+      const actions = await this.generatePossibleActions(gameState, agent);
+
       // Score each action using heuristic system
-      const scoredActions = await this.scoreActions(possibleActions, situationAnalysis, strategy);
-      
+      const scoredActions = await this.scoreActions(actions, situationAnalysis, strategy);
+
       // Select best action
       const bestAction = scoredActions[0];
-      
+
       // For complex decisions, use enhanced heuristic reasoning
-      if (bestAction.score < 0.7 && bestAction.type !== 'end_turn') {
-        const aiDecision = await this.getEnhancedHeuristicDecision(gameState, agent, possibleActions);
-        return aiDecision;
+      if (bestAction && bestAction.score < 0.7 && bestAction.type !== 'end_turn') {
+        // Use actions instead of possibleActions
+        const aiDecision = await this.getEnhancedHeuristicDecision(gameState, agent, actions);
+        if (aiDecision) return aiDecision;
       }
-      
+
       return bestAction;
     } catch (error) {
       console.error('Error in agent decision making:', error);
-      return { type: 'end_turn', data: {}, confidence: 0.1 };
+      return { type: 'end_turn', data: {}, confidence: 0.1, reasoning: "Error fallback" };
     }
   }
 
   async analyzeGameSituation(gameState, agent) {
     const { players, properties, current_player } = gameState;
     const currentPlayer = players.find(p => p.id === current_player.id);
-    
+
     // Calculate financial situation
     const liquidity = currentPlayer.balance;
     const totalAssets = await this.calculateTotalAssets(currentPlayer, properties);
     const monthlyIncome = await this.calculateMonthlyIncome(currentPlayer, properties);
-    
+
     // Analyze property ownership
     const ownedProperties = properties.filter(p => p.owner_id === currentPlayer.id);
     const colorGroups = this.analyzeColorGroups(ownedProperties);
-    
+
     // Competition analysis
     const competitors = players.filter(p => p.id !== currentPlayer.id);
     const competitionStrength = competitors.reduce((acc, comp) => {
       return acc + (comp.balance / 1000); // Simplified strength metric
     }, 0);
-    
+
     return {
       liquidity,
       totalAssets,
@@ -111,8 +123,8 @@ class AgentDecisionEngine {
     });
 
     // Check current position for property actions
-    const currentProperty = properties.find(p => p.position === board_position);
-    
+    const currentProperty = properties.find(p => p.id === board_position);
+
     if (currentProperty) {
       // Buy property if available
       if (!currentProperty.owner_id && currentPlayer.balance >= currentProperty.price) {
@@ -122,7 +134,7 @@ class AgentDecisionEngine {
           baseScore: 0.5
         });
       }
-      
+
       // Pay rent if owned by someone else
       if (currentProperty.owner_id && currentProperty.owner_id !== currentPlayer.id) {
         actions.push({
@@ -161,7 +173,7 @@ class AgentDecisionEngine {
           baseScore: 0.6
         });
       }
-      
+
       if (property.houses === 4 && currentPlayer.balance >= property.hotel_price) {
         actions.push({
           type: 'build_hotel',
@@ -186,58 +198,58 @@ class AgentDecisionEngine {
   async scoreActions(actions, situation, strategy) {
     const scoredActions = actions.map(action => {
       let score = action.baseScore;
-      
+
       // Apply strategy weights
       switch (action.type) {
         case 'buy_property':
           score *= strategy.complete_color_groups;
           if (situation.liquidity < 200) score *= strategy.maintain_liquidity;
           break;
-          
+
         case 'build_house':
         case 'build_hotel':
           score *= strategy.maximize_cashflow;
           if (situation.liquidity < 300) score *= strategy.maintain_liquidity;
           break;
-          
+
         case 'mortgage':
           score *= strategy.maintain_liquidity;
           score *= (1 - strategy.avoid_bankruptcy);
           break;
-          
+
         case 'unmortgage':
           score *= strategy.maximize_total_assets;
           break;
-          
+
         case 'propose_trade':
           score *= strategy.complete_color_groups;
           break;
-          
+
         case 'pay_rent':
           score = 1.0; // Always highest priority for mandatory actions
           break;
-          
+
         case 'end_turn':
           score *= strategy.maintain_liquidity;
           break;
       }
-      
+
       // Apply situational modifiers
       if (situation.liquidity < 100 && action.type !== 'mortgage') {
         score *= 0.5; // Low liquidity penalty
       }
-      
+
       if (situation.isInJail && action.type === 'end_turn') {
         score *= 0.1; // Don't just end turn in jail
       }
-      
+
       return {
         ...action,
         score,
         confidence: Math.min(score, 1.0)
       };
     });
-    
+
     return scoredActions.sort((a, b) => b.score - a.score);
   }
 
@@ -245,20 +257,20 @@ class AgentDecisionEngine {
     // Enhanced heuristic reasoning without external AI dependency
     const { current_player, players, properties } = gameState;
     const currentPlayer = players.find(p => p.id === current_player.id);
-    
+
     // Complex decision logic based on game state
     let reasoning = `Agent ${agent.name} (${agent.risk_profile} strategy): `;
-    
+
     // Analyze financial situation
     const liquidityRatio = currentPlayer.balance / 1500; // Starting balance reference
     const ownedProperties = properties.filter(p => p.owner_id === currentPlayer.id);
     const propertyRatio = ownedProperties.length / 28; // Total properties reference
-    
+
     // Enhanced decision logic
     if (liquidityRatio < 0.2) {
       reasoning += "Low cash reserves, prioritizing liquidity preservation";
       // Prefer mortgage or conservative actions
-      const conservativeActions = possibleActions.filter(a => 
+      const conservativeActions = possibleActions.filter(a =>
         a.type === 'mortgage' || a.type === 'end_turn'
       );
       if (conservativeActions.length > 0) {
@@ -270,11 +282,11 @@ class AgentDecisionEngine {
         };
       }
     }
-    
+
     if (propertyRatio > 0.5 && liquidityRatio > 0.5) {
       reasoning += "Strong position, focusing on development";
       // Prefer building actions
-      const developmentActions = possibleActions.filter(a => 
+      const developmentActions = possibleActions.filter(a =>
         a.type === 'build_house' || a.type === 'build_hotel'
       );
       if (developmentActions.length > 0) {
@@ -286,11 +298,11 @@ class AgentDecisionEngine {
         };
       }
     }
-    
+
     if (agent.risk_profile === 'aggressive' && liquidityRatio > 0.3) {
       reasoning += "Aggressive strategy, seeking expansion opportunities";
       // Prefer buying and building
-      const expansionActions = possibleActions.filter(a => 
+      const expansionActions = possibleActions.filter(a =>
         a.type === 'buy_property' || a.type === 'build_house'
       );
       if (expansionActions.length > 0) {
@@ -302,9 +314,16 @@ class AgentDecisionEngine {
         };
       }
     }
-    
+
     reasoning += "Using balanced approach based on current game state";
-    return possibleActions[0]; // Fallback to top heuristic choice
+
+    // Prefer active actions over ending turn
+    const activeActions = possibleActions.filter(a => a.type !== 'end_turn');
+    if (activeActions.length > 0) {
+      return activeActions[0];
+    }
+
+    return possibleActions[0]; // Fallback to top heuristic choice (likely end_turn if no active actions)
   }
 
   async calculateTotalAssets(player, properties) {
@@ -329,7 +348,7 @@ class AgentDecisionEngine {
 
   analyzeColorGroups(properties) {
     const colorGroups = {};
-    
+
     properties.forEach(property => {
       if (!colorGroups[property.color]) {
         colorGroups[property.color] = {
@@ -338,29 +357,29 @@ class AgentDecisionEngine {
           canBuild: false
         };
       }
-      
+
       colorGroups[property.color].total++;
       if (property.owner_id) {
         colorGroups[property.color].owned++;
       }
     });
-    
+
     // Check if any color groups are complete and can build
     Object.keys(colorGroups).forEach(color => {
       const group = colorGroups[color];
       group.canBuild = group.total === group.owned && group.total > 0;
     });
-    
+
     return colorGroups;
   }
 
   getBuildableProperties(properties) {
     return properties.filter(property => {
       // Can build if property is owned, not mortgaged, and has complete color group
-      return property.owner_id && 
-             !property.is_mortgaged && 
-             property.houses < 4 && 
-             !property.hotels;
+      return property.owner_id &&
+        !property.is_mortgaged &&
+        property.houses < 4 &&
+        !property.hotels;
     });
   }
 
@@ -368,14 +387,14 @@ class AgentDecisionEngine {
     // Simplified trade generation
     const otherPlayers = players.filter(p => p.id !== currentPlayer.id);
     const targetPlayer = otherPlayers[Math.floor(Math.random() * otherPlayers.length)];
-    
+
     if (!targetPlayer) return null;
-    
+
     const myProperties = properties.filter(p => p.owner_id === currentPlayer.id);
     const theirProperties = properties.filter(p => p.owner_id === targetPlayer.id);
-    
+
     if (myProperties.length === 0 || theirProperties.length === 0) return null;
-    
+
     return {
       from_player_id: currentPlayer.id,
       to_player_id: targetPlayer.id,
@@ -387,4 +406,4 @@ class AgentDecisionEngine {
   }
 }
 
-export default new AgentDecisionEngine();
+export default AgentDecisionEngine;

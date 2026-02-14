@@ -6,7 +6,7 @@ import User from "../models/User.js";
 const agentController = {
   async create(req, res) {
     try {
-      const { name, strategy, riskProfile, config, ownerAddress, registerOnChain = true } = req.body;
+      const { name, strategy, riskProfile, config, ownerAddress, ownerEmail, registerOnChain = true } = req.body;
 
       if (!ownerAddress) {
         return res.status(400).json({
@@ -22,6 +22,7 @@ const agentController = {
         const agent = await createAgentWithWallet({
           name,
           owner_address: ownerAddress,
+          owner_email: ownerEmail,
           strategy: strategy || 'balanced',
           risk_profile: riskProfile || 'balanced',
           config: config || {}
@@ -53,6 +54,7 @@ const agentController = {
         name,
         address,
         owner_address: ownerAddress,
+        owner_email: ownerEmail,
         strategy: strategy || 'balanced',
         risk_profile: riskProfile || 'balanced',
         config: config ? JSON.stringify(config) : null

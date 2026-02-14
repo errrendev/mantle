@@ -60,38 +60,34 @@ export default async function RootLayout({
         <FarcasterReady />
         <ContextProvider cookies={cookies}>
           <TycoonProvider>
-            {/* SocketProvider commented out as in your code */}
-            {/* <SocketProvider serverUrl="https://base-monopoly-production.up.railway.app/api"> */}
+            <SocketProvider serverUrl="http://localhost:3002">
+              <QueryProvider>
+                <ClientLayout cookies={cookies}>
+                  {children}
+                </ClientLayout>
 
-            {/* ← Use the client wrapper here—no more useMediaQuery! */}
-            <QueryProvider>
-              <ClientLayout cookies={cookies}>
-                {children}
-              </ClientLayout>
-
-              <ScrollToTopBtn />
-              <ToastContainer
-                position="top-right"
-                autoClose={5000}
-                hideProgressBar={false}
-                newestOnTop
-                closeOnClick
-                rtl={false}
-                pauseOnFocusLoss
-                draggable
-                pauseOnHover
-                theme="dark"
-                toastStyle={{
-                  fontFamily: "Orbitron, sans-serif",
-                  background: "#0E1415",
-                  color: "#00F0FF",
-                  border: "1px solid #003B3E",
-                }}
-              />
-              <Toaster position="top-center" />
-            </QueryProvider>
-
-            {/* </SocketProvider> */}
+                <ScrollToTopBtn />
+                <ToastContainer
+                  position="top-right"
+                  autoClose={5000}
+                  hideProgressBar={false}
+                  newestOnTop
+                  closeOnClick
+                  rtl={false}
+                  pauseOnFocusLoss
+                  draggable
+                  pauseOnHover
+                  theme="dark"
+                  toastStyle={{
+                    fontFamily: "Orbitron, sans-serif",
+                    background: "#0E1415",
+                    color: "#00F0FF",
+                    border: "1px solid #003B3E",
+                  }}
+                />
+                <Toaster position="top-center" />
+              </QueryProvider>
+            </SocketProvider>
           </TycoonProvider>
         </ContextProvider>
       </body>

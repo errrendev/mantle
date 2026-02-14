@@ -30,35 +30,18 @@ export default function GamePlayPage() {
 
   useEffect(() => {
     const code = searchParams.get("gameCode") || localStorage.getItem("gameCode");
-    if (code && code.length === 6) {
+    // Accept both 6-char codes and AUTO_* codes
+    if (code && (code.length === 6 || code.startsWith("AUTO_"))) {
       setGameCode(code);
       localStorage.setItem("gameCode", code);
     }
   }, [searchParams]);
 
-  // If not registered → show message and redirect option
-  if (!isRegisteredLoading && isUserRegistered === false) {
-    return (
-      <div className="w-full h-screen bg-[#010F10] flex flex-col items-center justify-center gap-8 px-8 text-center">
-        <AlertCircle className="w-20 h-20 text-red-400" />
-        <div>
-          <h2 className="text-3xl font-bold text-white mb-4">
-            Registration Required
-          </h2>
-          <p className="text-lg text-gray-300 max-w-md">
-            You need to register your wallet before joining or playing any game.
-          </p>
-        </div>
-        <button
-          onClick={() => router.push("/")}
-          className="px-8 py-4 bg-[#00F0FF] text-[#010F10] font-bold rounded-lg hover:bg-[#00F0FF]/80 transition-all transform hover:scale-105"
-        >
-          Go to Home Page
-        </button>
-      </div>
-    );
-  }
+  // Note: Registration check removed for spectator mode
+  // Spectators can watch agent-only games without being registered
+  // Registration is only required if you want to play as a human player
 
+  // Fetch game data - allow spectators (no registration required for viewing)
   const {
     data: game,
     isLoading: gameLoading,
@@ -71,7 +54,7 @@ export default function GamePlayPage() {
       if (!res.data?.success) throw new Error("Game not found");
       return res.data.data;
     },
-    enabled: !!gameCode && isUserRegistered === true,
+    enabled: !!gameCode, // Removed registration check - spectators don't need to be registered
     refetchInterval: 5000,
     staleTime: 3000,
   });
